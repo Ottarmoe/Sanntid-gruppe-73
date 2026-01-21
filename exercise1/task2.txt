@@ -1,0 +1,2 @@
+Both threads assume that the variable i can safely be cached. 
+So they both make a local copy of the variable, iterate it a number of times, and then move it up o the highest cche layer again.
