@@ -35,13 +35,13 @@ func sender(conn *net.UDPConn, serverAddr *net.UDPAddr){
 func main() {	
 	
 	var addr net.UDPAddr
-	addr.Port = 20002
+	addr.Port = 20001
 	addr.IP = net.IPv4(0, 0, 0, 0)
 
 	
 	var toAddr net.UDPAddr
-	toAddr.Port = 20002
-	toAddr.IP = net.IPv4(10, 100, 23, 11)
+	toAddr.Port = 20000
+	toAddr.IP = net.IPv4(10, 0, 10, 111)
 
 	recvConn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
@@ -60,34 +60,4 @@ func main() {
 	go sender(sendConn, &toAddr)
 
 	select {}
-
-	// sock, err := net.DialUDP("udp", &sendAddr, &toAddr)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// var buffer [1024]byte
-	// for {
-	// 	time.Sleep(200_000_000)
-
-		// if sending directly to a single remote machine:
-
-		// either: set up the socket to use a single remote address
-		//sock.connect(addr)
-		//sock.send(message)
-		// or: set up the remote address when sending
-		// sock.Write([]byte("heihei"))
-
-		// n, err := sock.Read(buffer[:])
-		// _ = err
-		// _ = n
-
-		// fmt.Println(string(buffer[:]))
-
-		// if sending on broadcast:
-		// you have to set up the BROADCAST socket option before calling connect / sendTo
-		//broadcastIP = #.#.#.255 // First three bytes are from the local IP, or just use 255.255.255.255
-		//addr = new InternetAddress(broadcastIP, port)
-		//sendSock = new Socket(udp) // UDP, aka SOCK_DGRAM
-		//sendSock.setOption(broadcast, true)
-		//sendSock.sendTo(message, addr)
 }
