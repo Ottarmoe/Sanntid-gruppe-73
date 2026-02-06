@@ -19,7 +19,7 @@ type HRAInput struct {
 }
 
 
-func test(){
+func Test(){
     hraExecutable := ".\\hall_request_assigner.exe"
 
         input := HRAInput{

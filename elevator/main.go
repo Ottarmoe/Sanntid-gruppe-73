@@ -1,7 +1,8 @@
 package main
 
-import "Driver-go/elevio"
-
+import "elevio"
+import "fmt"
+import "elevator/hra"
 
 
 
@@ -26,7 +27,7 @@ func main(){
     go elevio.PollStopButton(drv_stop)
     
     //Example usage of hall request assigner
-
+    hra.Test()
 
     //Example usage of button polling
     for {
