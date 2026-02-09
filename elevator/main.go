@@ -3,6 +3,7 @@ package main
 import "elevio"
 import "fmt"
 import "elevator/hra"
+import "elevator/utilities"
 
 
 
@@ -27,17 +28,19 @@ func main(){
     go elevio.PollStopButton(drv_stop)
     
     //Example usage of hall request assigner
-    hra.Test()
+    total, avg := utilities.TimeN(100, hra.Test)
+    fmt.Println("Total:", total)
+    fmt.Println("Avg:", avg)
 
     //Example usage of button polling
     for {
         select {
         case a := <- drv_buttons:
-            fmt.Printf("%+v\n", a)
+            // fmt.Printf("%+v\n", a)
             elevio.SetButtonLamp(a.Button, a.Floor, true)
             
         case a := <- drv_floors:
-            fmt.Printf("%+v\n", a)
+            // fmt.Printf("%+v\n", a)
             if a == numFloors-1 {
                 d = elevio.MD_Down
             } else if a == 0 {
@@ -47,7 +50,7 @@ func main(){
             
             
         case a := <- drv_obstr:
-            fmt.Printf("%+v\n", a)
+            // fmt.Printf("%+v\n", a)
             if a {
                 elevio.SetMotorDirection(elevio.MD_Stop)
             } else {

@@ -20,7 +20,7 @@ type HRAInput struct {
 
 
 func Test(){
-    hraExecutable := ".\\hall_request_assigner.exe"
+    hraExecutable := "hra/hall_request_assigner.exe"
 
         input := HRAInput{
         HallRequests: [][2]bool{{false, false}, {true, false}, {false, false}, {false, true}},
@@ -66,8 +66,8 @@ func Test(){
         return
     }
         
-    fmt.Printf("output: \n")
-    for k, v := range *output {
-        fmt.Printf("%6v :  %+v\n", k, v)
-    }
+    // fmt.Printf("output: \n")
+    // for k, v := range *output {
+    //     fmt.Printf("%6v :  %+v\n", k, v)
+    // }
 }
