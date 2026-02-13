@@ -20,7 +20,7 @@ type HRAInput struct {
 
 
 func Test(){
-    hraExecutable := "hra/hall_request_assigner.exe"
+    hraExecutable := "hra/hall_request_assigner"
 
         input := HRAInput{
         HallRequests: [][2]bool{{false, false}, {true, false}, {false, false}, {false, true}},
