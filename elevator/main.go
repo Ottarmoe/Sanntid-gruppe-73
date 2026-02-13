@@ -1,5 +1,6 @@
 package main
 
+import . "elevator/elevatorConstants"
 import "elevio"
 import "fmt"
 import "elevator/hra"
@@ -9,11 +10,11 @@ import "elevator/utilities"
 
 func main(){
 
-    numFloors := 4
+    
 
     //Init functions
-    elevio.Init("localhost:15657", numFloors)
-    var d elevio.MotorDirection = elevio.MD_Up
+    elevio.Init("localhost:15657", NumFloors)
+    var d elevio.MotorDirection = elevio.MD_Stop//elevio.MD_Up
     elevio.SetMotorDirection(d)
     
     //Button polling
@@ -28,7 +29,7 @@ func main(){
     go elevio.PollStopButton(drv_stop)
     
     //Example usage of hall request assigner
-    total, avg := utilities.TimeN(100, hra.Test)
+    total, avg := utilities.TimeN(10, hra.Test)
     fmt.Println("Total:", total)
     fmt.Println("Avg:", avg)
 
@@ -40,8 +41,8 @@ func main(){
             elevio.SetButtonLamp(a.Button, a.Floor, true)
             
         case a := <- drv_floors:
-            // fmt.Printf("%+v\n", a)
-            if a == numFloors-1 {
+            fmt.Printf("%+v\n", a)
+            if a == NumFloors-1 {
                 d = elevio.MD_Down
             } else if a == 0 {
                 d = elevio.MD_Up
@@ -59,7 +60,7 @@ func main(){
             
         case a := <- drv_stop:
             fmt.Printf("%+v\n", a)
-            for f := 0; f < numFloors; f++ {
+            for f := 0; f < NumFloors; f++ {
                 for b := elevio.ButtonType(0); b < 3; b++ {
                     elevio.SetButtonLamp(b, f, false)
                 }

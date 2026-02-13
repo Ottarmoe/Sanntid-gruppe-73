@@ -16,15 +16,22 @@ const (
 	CabUO //unknown order
 )
 
-type State struct {
+type SharedState struct {
+	id				int
     HallOrders    	[4][2]hallOrderState 
-    CabOrders     	[4]cabOrderState      
+    CabOrders     	[4][3]cabOrderState      
     CabFloor   	 	string    
     CabDir      
 	CabBehavoiur
 	CabMechError
-	OnNetwork		bool
 }
+type NetworkElevator struct{
+	CabNetError		bool
+	//wantBackUp		bool
+	State 			SharedState
+	//CabBackedUp		[4]bool
+}
+
 
 func finiteStateMachine(
 	buttonClick <-chan ButtonEvent, 
