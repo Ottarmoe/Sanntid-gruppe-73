@@ -41,7 +41,8 @@ func main() {
 	
 	var toAddr net.UDPAddr
 	toAddr.Port = 20000
-	toAddr.IP = net.IPv4(10, 0, 10, 111)
+	//toAddr.IP = net.IPv4(10, 0, 10, 111) //use this when running server_wfh.exe
+	toAddr.IP = net.IPv4(172, 17, 146, 72) //use this when running server_wfh
 
 	recvConn, err := net.ListenUDP("udp", &addr)
 	if err != nil {
