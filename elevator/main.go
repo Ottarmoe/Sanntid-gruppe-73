@@ -64,12 +64,33 @@ package main
 //     }   
 // }
 
-import "elevator/hra"
-import "elevator/utilities"
+// import "elevator/hra"
+// import "elevator/utilities"
+// import "fmt"
+
+// func main(){
+//     total, avg := utilities.TimeN(100, hra.Test)
+//     fmt.Println("Total:", total)
+//     fmt.Println("Avg:", avg)
+// }
+
+import "elevator/networkLow"
 import "fmt"
 
 func main(){
-    total, avg := utilities.TimeN(100, hra.Test)
-    fmt.Println("Total:", total)
-    fmt.Println("Avg:", avg)
+    fmt.Printf("Program started\n")
+    _ = networkLow.Init()
+    msg := []byte(fmt.Sprintf("Hello"))
+    _ = networkLow.Send(msg)
+    msg = []byte(fmt.Sprintf("Bye"))
+    _ = networkLow.Send(msg)
+    _ = networkLow.Send(msg)
+
+    // buf := make([]byte, 2048)
+    // n, addr, _ := networkLow.Receive(buf)
+    // networkLow.PrintMessage(buf, n, addr)
+    // n, addr, _ = networkLow.Receive(buf)
+    // networkLow.PrintMessage(buf, n, addr)
+
+
 }

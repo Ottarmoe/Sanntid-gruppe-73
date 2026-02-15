@@ -4,34 +4,31 @@ import (
 	"fmt"
 	"net"
 	"syscall"
+	"context"
+	"golang.org/x/sys/unix"
 )
 
 var conn *net.UDPConn
+
+var broadcastAddr = &net.UDPAddr{
+	IP:   net.IPv4bcast, // 255.255.255.255
+	Port: 30000,
+}
 
 func Init() error {
 	lc := net.ListenConfig{
 		Control: func(network, address string, c syscall.RawConn) error {
 			var controlErr error
 			err := c.Control(func(fd uintptr) {
-				// Allow multiple processes to bind same port
-				if err := syscall.SetsockoptInt(int(fd),
-					syscall.SOL_SOCKET,
-					syscall.SO_REUSEADDR, 1); err != nil {
+				if err := unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEADDR, 1); err != nil {
 					controlErr = err
 					return
 				}
-
-				if err := syscall.SetsockoptInt(int(fd),
-					syscall.SOL_SOCKET,
-					syscall.SO_REUSEPORT, 1); err != nil {
+				if err := unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_REUSEPORT, 1); err != nil {
 					controlErr = err
 					return
 				}
-
-				// Allow broadcast sending
-				if err := syscall.SetsockoptInt(int(fd),
-					syscall.SOL_SOCKET,
-					syscall.SO_BROADCAST, 1); err != nil {
+				if err := unix.SetsockoptInt(int(fd), unix.SOL_SOCKET, unix.SO_BROADCAST, 1); err != nil {
 					controlErr = err
 					return
 				}
@@ -52,8 +49,8 @@ func Init() error {
 	return nil
 }
 
-func Send(msg []byte, to *net.UDPAddr) error {
-    _, err := conn.WriteToUDP(msg, to)
+func Send(msg []byte) error {
+    _, err := conn.WriteToUDP(msg, broadcastAddr)
     return err
 }
 
