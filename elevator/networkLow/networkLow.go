@@ -49,42 +49,24 @@ func Init() error {
 	return nil
 }
 
-func Send(msg []byte) error {
-    _, err := conn.WriteToUDP(msg, broadcastAddr)
+func Send(data []byte) error {
+    _, err := conn.WriteToUDP(data, broadcastAddr)
     return err
 }
 
-func Receive(buf []byte) (int, *net.UDPAddr, error) {
-    return conn.ReadFromUDP(buf)
+//returns slice of array with length mathcing the exact length of the message
+func Receive() ([]byte, error) {
+    buf := make([]byte, 1024)
+
+    n, _, err := conn.ReadFromUDP(buf)
+    if err != nil {
+        return nil, err
+    }
+
+    return buf[:n],nil
 }
 
-func PrintMessage(buf []byte, n int, addr *net.UDPAddr){
-	fmt.Printf("from %s: %s\n", addr.String(), string(buf[:n]))
+func PrintMessage(data []byte){
+	fmt.Printf("Received %s\n", string(data[:]))
+
 }
-
-
-
-// func receiver(conn *net.UDPConn){
-// 	buf := make([]byte, 2048)
-
-// 		for {
-// 			n, addr, err := conn.ReadFromUDP(buf)
-// 			if err != nil {
-// 				fmt.Println("Recive error:", err)
-// 				continue
-// 			}
-// 			fmt.Printf("from %s: %s\n", addr.String(), string(buf[:n]))
-// 		}
-
-// }
-
-// func sender(conn *net.UDPConn, serverAddr *net.UDPAddr){
-// 	for i := 0; ; i++ {
-// 		msg := fmt.Sprintf("Hello %d", i)
-// 		_, err := conn.WriteToUDP([]byte(msg), serverAddr)
-// 		if err != nil {
-// 			fmt.Println("Send error:", err)
-// 		}
-// 		time.Sleep(1000000000)
-// 	}
-// }
