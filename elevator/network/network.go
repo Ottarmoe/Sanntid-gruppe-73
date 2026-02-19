@@ -13,7 +13,7 @@ func TestNodeCommunication(id string) error {
 		data, err := networkLow.Receive()
 		if err != nil {
 			fmt.Println("Receive error:", err)
-			continue // keep listening
+			continue
 		}
 
 		networkLow.PrintMessage(data)
@@ -24,7 +24,8 @@ func periodicSendingOfId(id string) {
 	for i := 0; ; i++ {
 		data := []byte(fmt.Sprintf("Hello %d from %s", i, id))
 
-		if err := networkLow.Send(data); err != nil {
+		err := networkLow.Send(data)
+		if err != nil {
 			fmt.Println("Send error:", err)
 		}
 
