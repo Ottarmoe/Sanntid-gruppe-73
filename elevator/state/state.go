@@ -1,6 +1,10 @@
-package state 
+package state
 
-import . "elevio"
+import (
+	//. "elevator/elevatorConstants"
+	. "elevio"
+	"fmt"
+)
 
 type hallOrderState int
 
@@ -27,92 +31,124 @@ const (
 
 type MotorBehaviour int
 
-const(
+const (
 	Moving MotorBehaviour = iota
 	Idle
 	DoorOpen
 )
 
-type MotorState struct{
-	Behaviour MotorBehaviour
-	Direction MotorDirection
+type MotorState struct {
+	Behaviour    MotorBehaviour
+	MovDirection Direction
 }
 
 type ElevState struct {
-	ID				int
-	NetError		bool
-	CabAgreement	[4]bool
-    HallOrders    	[4][2]hallOrderState //0 is down, 1 is up, use "direction"
-    CabOrders     	[4]cabOrderState      
-    CabFloor   	 	int    
-    CabDir      	Direction
-	CabBehaviour	MotorBehaviour
-	CabMechError	bool
+	NetError     bool
+	CabAgreement [4]bool
+	HallOrders   [4][2]hallOrderState //0 is down, 1 is up, use "direction"
+	CabOrders    [4]cabOrderState
+	CabFloor     int
+	CabMotor     MotorState
+	CabMechError bool
 }
 
+func PrintElevState(sta ElevState) {
+	fmt.Printf(`
+	NetError: %v
+	CabAgreement: %v
+	HallOrders: %v
+	CabOrders: %v
+	CabFloor: %v
+	CabMotor: %v
+	CabMechError: %v
+	`, sta.NetError, sta.CabAgreement, sta.HallOrders, sta.CabOrders, sta.CabFloor, sta.CabMotor, sta.CabMechError)
+}
 
+type ElevWorldView struct {
+	id    int
+	elevs [3]ElevState
+}
 
-//obstruction is not considered a state, and is handled internally by the door system
-func finiteStateMachine(
+type NetMessage struct {
+	HallOrders   [4][2]hallOrderState //0 is down, 1 is up, use "direction"
+	CabOrders    [4]cabOrderState
+	CabFloor     int
+	CabMotor     MotorState
+	CabMechError bool
+}
+
+// obstruction is not considered a state, and is handled internally by the door system
+func FiniteStateMachine(
 	id int,
 	initfloor int,
-	buttonClick <-chan ButtonEvent, 
-	floorReached <-chan int, 
-	Motor <-chan MotorState,
-	MechError <-chan bool
-	//stopClick <-chan bool, 
-	//obstructionChange <-chan bool
-	) {
+	buttonClick <-chan ButtonEvent,
+	floorReached <-chan int,
+	motor <-chan MotorState,
+	mechError <-chan bool,
+) {
 
-	elevs := make([]ElevState, 1) //zeroth element is always us
-	elevs[0].ID = id
-	elevs[0].NetError = true //trust me bro
+	var wView ElevWorldView
+	wView.id = id
+	me := &wView.elevs[id]
+	me.NetError = true //trust me bro
 
-	elevs[0].CabMechError = false
-	elevs[0].CabBehaviour = Idle
-	elevs[0].CabFloor = initfloor
-	
-	for floor := 0; floor < 4; floor++{
-		elevs[0].HallOrders[floor][Down] = HallNO
-		elevs[0].HallOrders[floor][Up] = HallNO
-		elevs[0].CabOrders[floor] = CabUO
-	} 
-	
-	
+	me.CabMechError = false
+	me.CabMotor.Behaviour = Idle
+	me.CabFloor = initfloor
+
+	for floor := 0; floor < 4; floor++ {
+		me.HallOrders[floor][Down] = HallNO
+		me.HallOrders[floor][Up] = HallNO
+		me.CabOrders[floor] = CabUO
+	}
+
 	for {
+		PrintElevState(*me)
 		select {
-		case buttonEvent := <- buttonClick:
-			handleButton(elevs, buttonEvent)
-			
-		case floorEvent := <- floorReached:
-			handleFloor(elevs, floorEvent)
-		case
-
+		case buttonEvent := <-buttonClick:
+			handleButton(&wView, buttonEvent)
+		case floorEvent := <-floorReached:
+			handleFloor(&wView, floorEvent)
+		case motorEvent := <-motor:
+			handleMotor(&wView, motorEvent)
+		case mechEvent := <-mechError:
+			handleMech(&wView, mechEvent)
 		}
 		// case a := <- obstructionChange:
 		// 	fmt.Printf("%+v\n", a)
 
-    }   
+	}
 }
 
-func handleButton(elevs []ElevState, event ButtonEvent){
-	switch event.Button{
+func handleButton(vw *ElevWorldView, event ButtonEvent) {
+	me := &vw.elevs[vw.id]
+	switch event.Button {
 	case BT_HallUp:
-		if elevs[0].HallOrders[event.Floor][Up] == HallNO{
-			elevs[0].HallOrders[event.Floor][Up] = HallO
+		if me.HallOrders[event.Floor][Up] == HallNO {
+			me.HallOrders[event.Floor][Up] = HallO
 		}
 	case BT_HallDown:
-		if elevs[0].HallOrders[event.Floor][Down] == HallNO{
-			elevs[0].HallOrders[event.Floor][Down] = HallO
+		if me.HallOrders[event.Floor][Down] == HallNO {
+			me.HallOrders[event.Floor][Down] = HallO
 		}
 	case BT_Cab:
-		elevs[0].CabOrders[event.Floor] = CabO
-		for _, elev := range elevs{
+		me.CabOrders[event.Floor] = CabO
+		for _, elev := range vw.elevs {
 			elev.CabAgreement[event.Floor] = false
 		}
 	}
 }
 
-func handleFloor(elevs []ElevState, event int){
-	elevs[0].CabFloor = event
+func handleFloor(vw *ElevWorldView, event int) {
+	vw.elevs[vw.id].CabFloor = event
+}
+func handleMotor(vw *ElevWorldView, event MotorState) {
+	vw.elevs[vw.id].CabMotor.Behaviour = event.Behaviour
+	if event.Behaviour == Moving {
+		vw.elevs[vw.id].CabMotor.MovDirection = event.MovDirection
+	}
+}
+
+func handleMech(vw *ElevWorldView, event bool) {
+	vw.elevs[vw.id].CabMechError = event
 }

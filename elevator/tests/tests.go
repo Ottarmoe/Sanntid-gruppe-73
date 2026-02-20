@@ -70,7 +70,7 @@ func TestMultipleServers(){
 }
 
 func TimeHRA(){
-    total, avg := utilities.TimeN(100, hra.Test)
+    total, avg := utilities.TimeN(5, hra.Test)
     fmt.Println("Total:", total)
     fmt.Println("Avg:", avg)
 }
