@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func TestNodeCommunication(id string) error {
+func TestNodeCommunication(id int) error {
 	go periodicSendingOfId(id)
 
 	for {
@@ -20,9 +20,9 @@ func TestNodeCommunication(id string) error {
 	}
 }
 
-func periodicSendingOfId(id string) {
+func periodicSendingOfId(id int) {
 	for i := 0; ; i++ {
-		data := []byte(fmt.Sprintf("Hello %d from %s", i, id))
+		data := []byte(fmt.Sprintf("Hello %d from %d", i, id))
 
 		err := networkLow.Send(data)
 		if err != nil {
