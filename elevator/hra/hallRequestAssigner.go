@@ -23,23 +23,23 @@ func Test(){
     hraExecutable := "hra/hall_request_assigner"
 
         input := HRAInput{
-        HallRequests: [][2]bool{{false, false}, {true, false}, {false, false}, {false, true}},
+        HallRequests: [][2]bool{{false, false}, {false, false}, {false, false}, {false, true}},
         States: map[string]HRAElevState{
             "one": HRAElevState{
                 Behavior:       "moving",
                 Floor:          2,
-                Direction:      "up",
-                CabRequests:    []bool{false, false, false, true},
+                Direction:      "down",
+                CabRequests:    []bool{true, false, false, false},
             },
             "two": HRAElevState{
-                Behavior:       "idle",
-                Floor:          0,
-                Direction:      "stop",
-                CabRequests:    []bool{false, false, false, false},
+                Behavior:       "moving",
+                Floor:          2,
+                Direction:      "down",
+                CabRequests:    []bool{true, false, false, false},
             },
             "three": HRAElevState{
                 Behavior:       "idle",
-                Floor:          0,
+                Floor:          2,
                 Direction:      "stop",
                 CabRequests:    []bool{false, false, false, false},
             },
@@ -66,8 +66,8 @@ func Test(){
         return
     }
         
-    // fmt.Printf("output: \n")
-    // for k, v := range *output {
-    //     fmt.Printf("%6v :  %+v\n", k, v)
-    // }
+    fmt.Printf("output: \n")
+    for k, v := range *output {
+        fmt.Printf("%6v :  %+v\n", k, v)
+    }
 }
