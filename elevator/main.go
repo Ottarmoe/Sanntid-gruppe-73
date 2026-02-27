@@ -27,7 +27,7 @@ func main() {
 	go elevio.PollObstructionSwitch(drv_obstr)
 	go elevio.PollStopButton(drv_stop)
 
-	state.FiniteStateMachine(0, 0, drv_buttons, drv_floors, drv_mot, drv_mech)
+	state.StateKeeper(0, 0, drv_buttons, drv_floors, drv_mot, drv_mech)
 
 	select {}
 }

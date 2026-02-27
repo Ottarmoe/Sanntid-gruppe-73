@@ -1,5 +1,5 @@
 package elevatorConstants
 
-var NumFloors int = 4
-var NumElevators int = 3
+const NumFloors int = 4
+const NumElevators int = 3
 
