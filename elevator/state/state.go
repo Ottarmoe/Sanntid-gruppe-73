@@ -97,14 +97,14 @@ func StateKeeper(
 
 	var wView ElevWorldView
 	wView.ID = id
-	for el := 0; el < NumElevators; el++ {
-		wView.Elevs[el].NetError = true
-		wView.Elevs[el].CabPriority = true
+	for elev := 0; elev < NumElevators; elev++ {
+		wView.Elevs[elev].NetError = true
+		wView.Elevs[elev].CabPriority = true
 
 		for floor := 0; floor < NumFloors; floor++ {
-			wView.Elevs[el].HallOrders[floor][Down] = HallNO
-			wView.Elevs[el].HallOrders[floor][Up] = HallNO
-			wView.Elevs[el].CabOrders[floor] = CabUO
+			wView.Elevs[elev].HallOrders[floor][Down] = HallNO
+			wView.Elevs[elev].HallOrders[floor][Up] = HallNO
+			wView.Elevs[elev].CabOrders[floor] = CabUO
 		}
 	}
 

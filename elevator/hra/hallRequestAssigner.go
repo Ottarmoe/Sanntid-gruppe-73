@@ -24,7 +24,7 @@ type HRAInput struct {
 	States       map[string]HRAElevstate `json:"states"`
 }
 
-func HRA(wv state.ElevWorldView) [NumFloors][2]bool {
+func HRA(wv state.ElevWorldView) [][2]bool {
 	hraExecutable := "hra/hall_request_assigner"
 	me := &wv.Elevs[wv.ID]
 
@@ -80,12 +80,12 @@ func HRA(wv state.ElevWorldView) [NumFloors][2]bool {
 	if err != nil {
 		fmt.Println("json.Unmarshal error: ", err)
 	}
-	fmt.Printf("output: \n")
-	for k, v := range *output {
-		fmt.Printf("%6v :  %+v\n", k, v)
-	}
+	//fmt.Printf("output: \n")
+	//for k, v := range *output {
+	//	fmt.Printf("%6v :  %+v\n", k, v)
+	//}
 
-	return [4][2]bool{{false, false}, {false, false}, {false, false}, {false, false}}
+	return (*output)[fmt.Sprintf("%d", wv.ID)]
 }
 
 func Test() {
