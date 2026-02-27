@@ -25,8 +25,8 @@ const (
 type Direction int
 
 const (
-	Down Direction = iota
-	Up
+	Up Direction = iota
+	Down
 )
 
 type MotorBehaviour int
@@ -43,8 +43,8 @@ type MotorState struct {
 }
 
 type PhysicalState struct {
-	motor MotorState
-	floor int
+	Motor MotorState
+	Floor int
 }
 
 type ElevState struct {
@@ -66,12 +66,12 @@ func PrintElevState(sta ElevState) {
 	CabFloor: %v
 	CabMotor: %v
 	CabMechError: %v
-	`, sta.NetError, sta.CabAgreement, sta.HallOrders, sta.CabOrders, sta.CabFloor, sta.CabMotor, sta.CabMechError)
+	`, sta.NetError, sta.CabAgreement, sta.HallOrders, sta.CabOrders, sta.CabPhysics.Floor, sta.CabPhysics.Motor, sta.CabMechError)
 }
 
 type ElevWorldView struct {
-	id    int
-	elevs [NumElevators]ElevState
+	ID    int
+	Elevs [NumElevators]ElevState
 }
 
 type NetMessage struct {
@@ -96,23 +96,23 @@ func StateKeeper(
 ) {
 
 	var wView ElevWorldView
-	wView.id = id
+	wView.ID = id
 	for el := 0; el < NumElevators; el++ {
-		wView.elevs[el].NetError = true
-		wView.elevs[el].CabPriority = true
+		wView.Elevs[el].NetError = true
+		wView.Elevs[el].CabPriority = true
 
 		for floor := 0; floor < NumFloors; floor++ {
-			wView.elevs[el].HallOrders[floor][Down] = HallNO
-			wView.elevs[el].HallOrders[floor][Up] = HallNO
-			wView.elevs[el].CabOrders[floor] = CabUO
+			wView.Elevs[el].HallOrders[floor][Down] = HallNO
+			wView.Elevs[el].HallOrders[floor][Up] = HallNO
+			wView.Elevs[el].CabOrders[floor] = CabUO
 		}
 	}
-	//me.NetError = true //trust me bro
 
-	me := &wView.elevs[id]
+	me := &wView.Elevs[id]
+	me.NetError = true //trust me bro
 	me.CabMechError = false
-	me.CabPhysics.motor.Behaviour = Idle
-	me.CabPhysics.floor = initfloor
+	me.CabPhysics.Motor.Behaviour = Idle
+	me.CabPhysics.Floor = initfloor
 
 	for {
 		PrintElevState(*me)
@@ -136,7 +136,7 @@ func StateKeeper(
 }
 
 func handleButton(vw *ElevWorldView, event ButtonEvent) {
-	me := &vw.elevs[vw.id]
+	me := &vw.Elevs[vw.ID]
 	switch event.Button {
 	case BT_HallUp:
 		if me.HallOrders[event.Floor][Up] == HallNO {
@@ -148,24 +148,24 @@ func handleButton(vw *ElevWorldView, event ButtonEvent) {
 		}
 	case BT_Cab:
 		me.CabOrders[event.Floor] = CabO
-		for _, elev := range vw.elevs {
+		for _, elev := range vw.Elevs {
 			elev.CabAgreement[event.Floor] = false
 		}
 	}
 }
 
 func handleFloor(wv *ElevWorldView, event int) {
-	wv.elevs[wv.id].CabPhysics.floor = event
+	wv.Elevs[wv.ID].CabPhysics.Floor = event
 }
 func handleMotor(wv *ElevWorldView, event MotorState) {
-	wv.elevs[wv.id].CabPhysics.motor.Behaviour = event.Behaviour
+	wv.Elevs[wv.ID].CabPhysics.Motor.Behaviour = event.Behaviour
 	if event.Behaviour == Moving {
-		wv.elevs[wv.id].CabPhysics.motor.MovDirection = event.MovDirection
+		wv.Elevs[wv.ID].CabPhysics.Motor.MovDirection = event.MovDirection
 	}
 }
 
 func handleMech(wv *ElevWorldView, event bool) {
-	wv.elevs[wv.id].CabMechError = event
+	wv.Elevs[wv.ID].CabMechError = event
 }
 
 func findConsensus(wv *ElevWorldView) ElevWorldView {
@@ -176,40 +176,40 @@ func findConsensus(wv *ElevWorldView) ElevWorldView {
 		cabExists := false
 		elevExists := false
 		for elev := 0; elev < NumElevators; elev++ {
-			if wv.elevs[elev].NetError == false {
+			if wv.Elevs[elev].NetError == false {
 				elevExists = true
-				if wv.elevs[elev].HallOrders[floor][Up] == HallO {
+				if wv.Elevs[elev].HallOrders[floor][Up] == HallO {
 					hallDownExists = true
 				}
-				if wv.elevs[elev].HallOrders[floor][Down] == HallO {
+				if wv.Elevs[elev].HallOrders[floor][Down] == HallO {
 					hallUpExists = true
 				}
-				if wv.elevs[elev].CabAgreement[floor] == true {
+				if wv.Elevs[elev].CabAgreement[floor] == true {
 					cabExists = true
 				}
 			}
 		}
-		if (!elevExists || hallDownExists) && (wv.elevs[wv.id].HallOrders[floor][Down] == HallO) {
-			consensus.elevs[consensus.id].HallOrders[floor][Down] = HallO
+		if (!elevExists || hallDownExists) && (wv.Elevs[wv.ID].HallOrders[floor][Down] == HallO) {
+			consensus.Elevs[consensus.ID].HallOrders[floor][Down] = HallO
 		} else {
-			consensus.elevs[consensus.id].HallOrders[floor][Down] = HallNO
+			consensus.Elevs[consensus.ID].HallOrders[floor][Down] = HallNO
 		}
-		if (!elevExists || hallUpExists) && (wv.elevs[wv.id].HallOrders[floor][Up] == HallO) {
-			consensus.elevs[consensus.id].HallOrders[floor][Up] = HallO
+		if (!elevExists || hallUpExists) && (wv.Elevs[wv.ID].HallOrders[floor][Up] == HallO) {
+			consensus.Elevs[consensus.ID].HallOrders[floor][Up] = HallO
 		} else {
-			consensus.elevs[consensus.id].HallOrders[floor][Up] = HallNO
+			consensus.Elevs[consensus.ID].HallOrders[floor][Up] = HallNO
 		}
-		if (!elevExists || cabExists) && (wv.elevs[wv.id].CabOrders[floor] == CabO) {
-			consensus.elevs[consensus.id].CabOrders[floor] = CabO
+		if (!elevExists || cabExists) && (wv.Elevs[wv.ID].CabOrders[floor] == CabO) {
+			consensus.Elevs[consensus.ID].CabOrders[floor] = CabO
 		} else {
-			consensus.elevs[consensus.id].CabOrders[floor] = CabNO
+			consensus.Elevs[consensus.ID].CabOrders[floor] = CabNO
 		}
 	}
 	return consensus
 }
 
 func updateLights(consensus *ElevWorldView) {
-	me := &consensus.elevs[consensus.id]
+	me := &consensus.Elevs[consensus.ID]
 	for floor := 0; floor < NumFloors; floor++ {
 		if me.HallOrders[floor][Down] == HallO {
 			SetButtonLamp(BT_HallDown, floor, true)
@@ -227,5 +227,5 @@ func updateLights(consensus *ElevWorldView) {
 			SetButtonLamp(BT_Cab, floor, false)
 		}
 	}
-	SetFloorIndicator(me.CabPhysics.floor)
+	SetFloorIndicator(me.CabPhysics.Floor)
 }

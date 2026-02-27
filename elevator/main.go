@@ -5,8 +5,10 @@ import (
 	// "elevator/networkLow"
 	//"elevator/tests"
 	. "elevator/elevatorConstants"
+	referenceGenerator "elevator/refereceGenerator"
 	"elevator/state"
 	"elevio"
+	//"elevator/hra"
 )
 
 func main() {
@@ -15,19 +17,24 @@ func main() {
 	//serverAdress := fmt.Sprintf("localhost:%d", 15657)
 	elevio.Init("localhost:15657", NumFloors)
 
-	drv_buttons := make(chan elevio.ButtonEvent)
-	drv_floors := make(chan int)
-	drv_obstr := make(chan bool)
-	drv_stop := make(chan bool)
-	drv_mot := make(chan state.MotorState)
-	drv_mech := make(chan bool)
+	sense_buttons := make(chan elevio.ButtonEvent)
+	sense_floor := make(chan int)
+	sense_obstr := make(chan bool)
+	sense_stop := make(chan bool)
+	int_mot := make(chan state.MotorState)
+	int_mech := make(chan bool)
 
-	go elevio.PollButtons(drv_buttons)
-	go elevio.PollFloorSensor(drv_floors)
-	go elevio.PollObstructionSwitch(drv_obstr)
-	go elevio.PollStopButton(drv_stop)
+	stat_Gen := make(chan state.ElevWorldView)
+	stat_Cont := make(chan state.ElevWorldView)
+	stat_Insp := make(chan state.ElevWorldView)
 
-	state.StateKeeper(0, 0, drv_buttons, drv_floors, drv_mot, drv_mech)
+	go elevio.PollButtons(sense_buttons)
+	go elevio.PollFloorSensor(sense_floor)
+	go elevio.PollObstructionSwitch(sense_obstr)
+	go elevio.PollStopButton(sense_stop)
+
+	go state.StateKeeper(0, 0, sense_buttons, sense_floor, int_mot, int_mech, stat_Gen, stat_Cont, stat_Insp)
+	go referenceGenerator.ReferenceGenerator(stat_Gen)
 
 	select {}
 }
