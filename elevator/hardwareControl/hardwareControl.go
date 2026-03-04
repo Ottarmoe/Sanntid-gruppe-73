@@ -6,29 +6,18 @@ import (
 	. "elevator/state"
 )
 
-func HardWareControl(wv <-chan ElevWorldView) {
+func HardWareControl(physicsToHardware <-chan PhysicalState, ordersWithConsesusToHardware <-chan OrdersWithConsesus) {
 	for {
-		consensus := <- wv;
+		select {
+		case physicalState := <-physicsToHardware:
+			SetFloorIndicator(physicalState.Floor)
 
-		me := &consensus.Elevs[consensus.ID]
-		for floor := 0; floor < NumFloors; floor++ {
-			if me.HallOrders[floor][Down] == HallO {
-				SetButtonLamp(BT_HallDown, floor, true)
-			} else {
-				SetButtonLamp(BT_HallDown, floor, false)
-			}
-			if me.HallOrders[floor][Up] == HallO {
-				SetButtonLamp(BT_HallUp, floor, true)
-			} else {
-				SetButtonLamp(BT_HallUp, floor, false)
-			}
-			if me.CabOrders[floor] == CabO {
-				SetButtonLamp(BT_Cab, floor, true)
-			} else {
-				SetButtonLamp(BT_Cab, floor, false)
-			}
+		case ordersWithConsesus := <-ordersWithConsesusToHardware:
+			for floor := 0; floor < NumFloors; floor++ {
+				SetButtonLamp(BT_HallDown, floor, ordersWithConsesus.HallOrders[floor][Down])
+				SetButtonLamp(BT_HallUp, floor, ordersWithConsesus.HallOrders[floor][Up])
+				SetButtonLamp(BT_Cab, floor, ordersWithConsesus.HallOrders[floor][Down])
+			}	
 		}
-		SetFloorIndicator(me.CabPhysics.Floor)
 	}
-
 }

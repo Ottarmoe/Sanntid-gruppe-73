@@ -25,8 +25,9 @@ func handleButton(vw *ElevWorldView, event ButtonEvent) {
 	}
 }
 
-func findConsensus(wv *ElevWorldView) ElevWorldView {
-	consensus := *wv
+func findConsensus(wv *ElevWorldView) OrdersWithConsesus {
+	var ordersWithConsesus OrdersWithConsesus
+
 	for floor := 0; floor < NumFloors; floor++ {
 		hallDownExists := false
 		hallUpExists := false
@@ -47,20 +48,20 @@ func findConsensus(wv *ElevWorldView) ElevWorldView {
 			}
 		}
 		if (!elevExists || hallDownExists) && (wv.Elevs[wv.ID].HallOrders[floor][Down] == HallO) {
-			consensus.Elevs[consensus.ID].HallOrders[floor][Down] = HallO
+			ordersWithConsesus.HallOrders[floor][Down] = true
 		} else {
-			consensus.Elevs[consensus.ID].HallOrders[floor][Down] = HallNO
+			ordersWithConsesus.HallOrders[floor][Down] = false
 		}
 		if (!elevExists || hallUpExists) && (wv.Elevs[wv.ID].HallOrders[floor][Up] == HallO) {
-			consensus.Elevs[consensus.ID].HallOrders[floor][Up] = HallO
+			ordersWithConsesus.HallOrders[floor][Up] = true
 		} else {
-			consensus.Elevs[consensus.ID].HallOrders[floor][Up] = HallNO
+			ordersWithConsesus.HallOrders[floor][Up] = false
 		}
 		if (!elevExists || cabExists) && (wv.Elevs[wv.ID].CabOrders[floor] == CabO) {
-			consensus.Elevs[consensus.ID].CabOrders[floor] = CabO
+			ordersWithConsesus.CabOrders[floor] = true
 		} else {
-			consensus.Elevs[consensus.ID].CabOrders[floor] = CabNO
+			ordersWithConsesus.CabOrders[floor] = false
 		}
 	}
-	return consensus
+	return ordersWithConsesus
 }
