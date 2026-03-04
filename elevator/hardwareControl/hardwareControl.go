@@ -12,6 +12,8 @@ func HardWareControl(physicsToHardware <-chan PhysicalState, ordersWithConsesusT
 		case physicalState := <-physicsToHardware:
 			SetFloorIndicator(physicalState.Floor)
 
+			SetMotorDirection
+
 		case ordersWithConsesus := <-ordersWithConsesusToHardware:
 			for floor := 0; floor < NumFloors; floor++ {
 				SetButtonLamp(BT_HallDown, floor, ordersWithConsesus.HallOrders[floor][Down])

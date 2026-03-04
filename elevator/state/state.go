@@ -72,7 +72,7 @@ func StateKeeper(
 	initfloor int,
 	buttonClick <-chan ButtonEvent,
 	floorReached <-chan int,
-	motor <-chan MotorState,
+	motor <-chan PhysicalState,
 	mechError <-chan bool,
 	stateComRefGenerator chan<- ElevWorldView,
 	stateComController chan<- ElevWorldView,
@@ -83,22 +83,22 @@ func StateKeeper(
 
 	var wView ElevWorldView = initWorldView(id,initfloor);
 	elevator := &wView.Elevs[id]	
-	physics := elevator.PhysicalState
+	physicalState := &elevator.PhysicalState
 
 	for {
-		PrintElevState(*me)
+		PrintElevState(*elevator)
 		select {
 		case buttonEvent := <-buttonClick:
 			handleButton(&wView, buttonEvent)
 		case floorEvent := <-floorReached:
-			handleFloor(&wView, floorEvent)
+			handleFloor(physicalState, floorEvent)
 		case motorEvent := <-motor:
 			handleMotor(&wView, motorEvent)
 		case mechEvent := <-mechError:
 			handleMech(&wView, mechEvent)
 		}
 		ordersWithConsesus := findConsensus(&wView)
-		
+
 		ordersWithConsesusToHardware <- ordersWithConsesus
 		physicsToHardware <- physics
 

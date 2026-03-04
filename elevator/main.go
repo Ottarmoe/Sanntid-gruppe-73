@@ -22,7 +22,7 @@ func main() {
 	sense_floor := make(chan int)
 	sense_obstr := make(chan bool)
 	sense_stop := make(chan bool)
-	int_mot := make(chan state.MotorState)
+	int_mot := make(chan state.PhysicalState)
 	int_mech := make(chan bool)
 
 	stat_Gen := make(chan state.ElevWorldView)
@@ -39,7 +39,7 @@ func main() {
 	go elevio.PollStopButton(sense_stop)
 
 	go state.StateKeeper(0, 0, sense_buttons, sense_floor, int_mot, int_mech, stat_Gen, stat_Cont, stat_Insp,ordersWithConsesusToHardware, physicsToHardware)
-	go HardWareControl(hardWareControlChan)
+	go HardWareControl(physicsToHardware, ordersWithConsesusToHardware)
 	// go referenceGenerator.ReferenceGenerator(stat_Gen)
 
 

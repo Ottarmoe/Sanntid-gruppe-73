@@ -1,16 +1,19 @@
 package state
 
-func handleFloor(wv *ElevWorldView, event int) {
-	wv.Elevs[wv.ID].CabPhysics.Floor = event
+func handleFloor(physicalState *PhysicalState, event int) {	
+	physicalState.Floor = event
 }
 
-func handleMotor(wv *ElevWorldView, event MotorState) {
-	wv.Elevs[wv.ID].CabPhysics.Motor.Behaviour = event.Behaviour
+func handleMotor(wv *ElevWorldView, event PhysicalState) {
+	elevator := &wv.Elevs[wv.ID]	
+	physics := &elevator.PhysicalState
+
+	physics.Behaviour = event.Behaviour
 	if event.Behaviour == Moving {
-		wv.Elevs[wv.ID].CabPhysics.Motor.MovDirection = event.MovDirection
+		physics.MovDirection = event.MovDirection
 	}
 }
 
 func handleMech(wv *ElevWorldView, event bool) {
-	wv.Elevs[wv.ID].CabMechError = event
+	wv.Elevs[wv.ID].MechError = event
 }
