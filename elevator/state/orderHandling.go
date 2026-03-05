@@ -25,8 +25,9 @@ func handleButton(vw *ElevWorldView, event ButtonEvent) {
 	}
 }
 
-func findConsensus(wv *ElevWorldView) OrdersWithConsesus {
+func findConsensus(wv ElevWorldView) OrdersWithConsesus {
 	var ordersWithConsesus OrdersWithConsesus
+
 
 	for floor := 0; floor < NumFloors; floor++ {
 		hallDownExists := false
@@ -34,12 +35,16 @@ func findConsensus(wv *ElevWorldView) OrdersWithConsesus {
 		cabExists := false
 		elevExists := false
 		for elev := 0; elev < NumElevators; elev++ {
+			peerHallOrders := &wv.ElevStates[elev].OrderState.HallOrders
+			peerCabOrders := &wv.ElevStates[elev].OrderState.CabOrders
+
+
 			if wv.Elevs[elev].NetError == false {
 				elevExists = true
-				if wv.Elevs[elev].HallOrders[floor][Up] == HallO {
+				if peerHallOrders[floor][Up] == HallO {
 					hallDownExists = true
 				}
-				if wv.Elevs[elev].HallOrders[floor][Down] == HallO {
+				if peerHallOrders[floor][Down] == HallO {
 					hallUpExists = true
 				}
 				if wv.Elevs[elev].CabAgreement[floor] == true {

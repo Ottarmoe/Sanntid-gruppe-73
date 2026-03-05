@@ -37,26 +37,26 @@ const (
 type PhysicalState struct {
 	Behaviour    MotorBehaviour
 	MovDirection Direction
-	Floor int
+	Floor 		 int
+	MechError    bool
 }
 
 type OrderState struct {
-	CabAgreement [NumFloors]bool
-	CabPriority  bool
 	HallOrders   [NumFloors][2]hallOrderState //0 is down, 1 is up, use "direction"
 	CabOrders    [NumFloors]cabOrderState
 }
 
-type ElevState struct {
+type ElevState struct { //States to be mirrored to other elevators
 	OrderState    OrderState
 	PhysicalState PhysicalState
-	NetError      bool
-	MechError     bool
 }
 
 type ElevWorldView struct {
-	ID    int
-	Elevs [NumElevators]ElevState
+	ID    		   	int
+	ElevStates 	    [NumElevators]ElevState
+	CabArchiveSeen 	[NumElevators]bool
+	CabAgreement    [NumElevators][NumFloors]bool
+	NetError        [NumElevators]bool
 }
 
 //Consesus struct
@@ -97,10 +97,10 @@ func StateKeeper(
 		case mechEvent := <-mechError:
 			handleMech(&wView, mechEvent)
 		}
-		ordersWithConsesus := findConsensus(&wView)
+		ordersWithConsesus := findConsensus(wView)
 
 		ordersWithConsesusToHardware <- ordersWithConsesus
-		physicsToHardware <- physics
+		physicsToHardware <- *physicalState
 
 		// stateComRefGenerator <- consensus
 		//stateComController<-consensus

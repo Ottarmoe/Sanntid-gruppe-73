@@ -18,7 +18,7 @@ func HardWareControl(physicsToHardware <-chan PhysicalState, ordersWithConsesusT
 			for floor := 0; floor < NumFloors; floor++ {
 				SetButtonLamp(BT_HallDown, floor, ordersWithConsesus.HallOrders[floor][Down])
 				SetButtonLamp(BT_HallUp, floor, ordersWithConsesus.HallOrders[floor][Up])
-				SetButtonLamp(BT_Cab, floor, ordersWithConsesus.HallOrders[floor][Down])
+				SetButtonLamp(BT_Cab, floor, ordersWithConsesus.CabOrders[floor])
 			}	
 		}
 	}
