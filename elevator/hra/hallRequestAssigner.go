@@ -24,42 +24,32 @@ type HRAInput struct {
 	States       map[string]HRAElevstate `json:"states"`
 }
 
-func HRA(wv state.ElevWorldView) [][2]bool {
+func HRA(
+	orders state.OrdersWithConsesus,
+	physics [NumElevators]PhysicalState,
+	NetError [3]bool,
+) [][2]bool {
+
 	hraExecutable := "hra/hall_request_assigner"
-	me := &wv.Elevs[wv.ID]
+	id := orders.ID
 
 	input := HRAInput{
 		HallRequests: [][2]bool{{false, false}, {false, false}, {false, false}, {false, false}},
 		States:       make(map[string]HRAElevstate),
 	}
 
-	for floor := 0; floor < NumFloors; floor++ {
-		if me.HallOrders[floor][Down] == HallO {
-			input.HallRequests[floor][Down] = true
-		} else {
-			input.HallRequests[floor][Down] = false
-		}
-		if me.HallOrders[floor][Up] == HallO {
-			input.HallRequests[floor][Up] = true
-		} else {
-			input.HallRequests[floor][Up] = false
-		}
-	}
+	input.HallRequests = orders.HallOrders[:]
+
+	//
 	for elev := 0; elev < NumElevators; elev++ {
-		if !wv.Elevs[elev].CabMechError && !wv.Elevs[elev].NetError || elev == wv.ID {
-			var cabRequests [NumFloors]bool
-			for floor := 0; floor < NumFloors; floor++ {
-				if wv.Elevs[elev].CabOrders[floor] == CabO {
-					cabRequests[floor] = true
-				} else {
-					cabRequests[floor] = false
-				}
-			}
+		//if no errors, or the elevator is us
+		if !physics[elev].MechError && !NetError[elev] || elev == id {
+
 			input.States[fmt.Sprintf("%d", elev)] = HRAElevstate{
-				Behavior:    []string{"idle", "moving", "doorOpen"}[wv.Elevs[elev].CabPhysics.Motor.Behaviour],
-				Floor:       wv.Elevs[elev].CabPhysics.Floor,
-				Direction:   []string{"up", "Down"}[wv.Elevs[elev].CabPhysics.Motor.MovDirection],
-				CabRequests: cabRequests[:],
+				Behavior:    []string{"idle", "moving", "doorOpen"}[physics[id].Behaviour],
+				Floor:       physics[id].Floor,
+				Direction:   []string{"up", "Down"}[physics[id].MovDirection],
+				CabRequests: orders.CabOrders[elev][:],
 			}
 		}
 	}
@@ -85,7 +75,7 @@ func HRA(wv state.ElevWorldView) [][2]bool {
 	//	fmt.Printf("%6v :  %+v\n", k, v)
 	//}
 
-	return (*output)[fmt.Sprintf("%d", wv.ID)]
+	return (*output)[fmt.Sprintf("%d", id)]
 }
 
 func Test() {
