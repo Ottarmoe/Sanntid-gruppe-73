@@ -2,8 +2,10 @@ package state
 
 import (
 	. "elevator/elevatorConstants"
-	. "elevio"
+	"elevator/hra"
+	"elevator/referenceGenerator"
 	. "elevator/stateTypes"
+	. "elevio"
 )
 
 // obstruction is not considered a state, and is handled internally by the door system
@@ -43,6 +45,15 @@ func StateKeeper(
 
 		ordersWithConsesusToHardware <- ordersWithConsesus
 		physicsToHardware <- *physicalState
+		stateToController <- *physicalState
+
+		var physics [NumElevators]PhysicalState
+		for elev := 0; elev < NumElevators; elev++ {
+			physics[elev] = wView.ElevStates[elev].PhysicalState
+		}
+		relevantOrders := hra.HRA(ordersWithConsesus, physics, wView.NetError)
+		ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
+		refToController <- ref
 
 		// stateComRefGenerator <- consensus
 		//stateComController<-consensus
