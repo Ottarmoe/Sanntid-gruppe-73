@@ -1,8 +1,8 @@
 package logicalController
 
 import (
-	. "elevator/elevatorConstants"
-	. "elevator/state"
+	//. "elevator/elevatorConstants"
+	//. "elevator/state"
 	. "elevator/stateTypes"
 	"math"
 	"time"
@@ -36,10 +36,10 @@ func Controller(
 				doorOpenFor <- 3.
 				actualState.Behaviour = DoorOpen
 				stateChanged = true
-			} else if ref.Behaviour == Idle && actualState.Behaviour != doorOpen {
+			} else if ref.Behaviour == Idle && actualState.Behaviour != DoorOpen {
 				actualState.Behaviour = Idle
 				stateChanged = true
-			} else if ref.Behaviour == Moving && actualState.Behaviour != doorOpen {
+			} else if ref.Behaviour == Moving && actualState.Behaviour != DoorOpen {
 				actualState.Behaviour = Moving
 				stateChanged = true
 			}
@@ -59,7 +59,7 @@ func Controller(
 		stateChanged = false
 
 		if actualState == ref {
-			referenceRequest <- struct{}
+			referenceRequest <- struct{}{}
 		}
 		//wait for any change in state, or the arrival of a new reference
 		if actualState != ref {
@@ -87,7 +87,7 @@ func Controller(
 
 func burnoutTimer(span float64, burnout chan<- struct{}) {
 	time.Sleep(time.Second * time.Duration(span))
-	burnout <- struct{}
+	burnout <- struct{}{}
 }
 
 func doors(HoldOpenFor <-chan float64, doorsClosed chan<- struct{}, obstruction <-chan bool) {
@@ -108,7 +108,7 @@ func doors(HoldOpenFor <-chan float64, doorsClosed chan<- struct{}, obstruction 
 		case _ = <-burnoutReturn:
 			numTimers--
 			if numTimers == 0 && !obs {
-				doorsClosed <- struct{}
+				doorsClosed <- struct{}{}
 			}
 		}
 	}

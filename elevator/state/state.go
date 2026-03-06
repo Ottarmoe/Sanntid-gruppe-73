@@ -21,13 +21,14 @@ func StateKeeper(
 	physicsToHardware chan<- PhysicalState,
 
 	stateToController chan<- PhysicalState,
-	referenceRequest chan<- struct{},
+	referenceRequest <-chan struct{},
 	refToController chan<- PhysicalState,
 ) {
 
 	var wView ElevWorldView = initWorldView(id, initfloor)
 	me := &wView.ElevStates[id]
 	physicalState := &me.PhysicalState
+	stateToController <- *physicalState
 
 	for {
 		PrintElevState(*me)
@@ -40,20 +41,23 @@ func StateKeeper(
 			handleMotor(&wView, motorEvent)
 		case mechEvent := <-mechError:
 			handleMech(&wView, mechEvent)
+		case _ = <-referenceRequest:
+
+			var physics [NumElevators]PhysicalState
+			for elev := 0; elev < NumElevators; elev++ {
+				physics[elev] = wView.ElevStates[elev].PhysicalState
+			}
+			ordersWithConsesus := findConsensus(wView)
+			relevantOrders := hra.HRA(ordersWithConsesus, physics, wView.NetError)
+			ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
+			_ = ref
+			//refToController <- ref
 		}
 		ordersWithConsesus := findConsensus(wView)
 
 		ordersWithConsesusToHardware <- ordersWithConsesus
 		physicsToHardware <- *physicalState
-		stateToController <- *physicalState
-
-		var physics [NumElevators]PhysicalState
-		for elev := 0; elev < NumElevators; elev++ {
-			physics[elev] = wView.ElevStates[elev].PhysicalState
-		}
-		relevantOrders := hra.HRA(ordersWithConsesus, physics, wView.NetError)
-		ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
-		refToController <- ref
+		//stateToController <- *physicalState
 
 		// stateComRefGenerator <- consensus
 		//stateComController<-consensus
