@@ -1,108 +1,149 @@
 package referenceGenerator
 
 import (
-	"elevator/hra"
+	//"elevator/hra"
 	. "elevator/state"
 	. "elevator/elevatorConstants"
-	"fmt"
 )
 
-func ReferenceGenerator(
-	newState <-chan ElevWorldView,
-	//motorRef chan<- PhysicalState,
-	//inspRef chan<- PhysicalState,
-) {
+func ReferenceGenerator(newState <-chan ElevWorldView) PhysicalState {
 	for {
-		wv := <-newState
+		newState := <- newState
+		myElevState := newState.ElevStates[newState.ID]
 
-		//wv.Elevs[0].NetError = false
-		//wv.Elevs[1].NetError = false
-		//wv.Elevs[2].NetError = false
+		CurrentFloor := myElevState.PhysicalState.Floor
+		CurrentDirection := myElevState.PhysicalState.MovDirection
 
-		me := wv.Elevs[wv.ID]
-		hallOrders := hra.HRA(wv)
-		me.HallOrders = hallOrders
-		cabOrders := me.CabOrders
-		floor := me.CabPhysics.Floor
-		behaviour := me.CabPhysics.Motor.Behaviour
-		direction := me.CabPhysics.Motor.MovDirection
 	
+		switch myElevState.PhysicalState.Behaviour{
 
-		switch behaviour{
 		case Idle:
-			anyOrders := orderAfterAndOnFloor(me)
+
+			anyOrdersOnFloorInSameDirection := orderOnCurrentFloorInSameDirection(myElevState)
+			if anyOrdersOnFloorInSameDirection {
+				
+				referencePhysicalState := setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor)
+				return referencePhysicalState
+			}
+			
+
+			anyOrdersInSameDirection := orderInSameDirection(myElevState)
+			if anyOrdersInSameDirection {
+
+				referencePhysicalState := setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor)
+				return referencePhysicalState
+			}
+
+			anyOrdersOnFloorInOppositeDirection := orderOnCurrentFloorInOppositeDirection(myElevState)
+			if anyOrdersOnFloorInOppositeDirection {
+
+				referencePhysicalState := setReferencePhysicalState(DoorOpen, oppositeDirection(CurrentDirection), CurrentFloor)
+				return referencePhysicalState
+			}
+
+			anyOrdersInOppositeDirection := orderInOppositeDirection(myElevState)
+			if anyOrdersInOppositeDirection {
 
 
+				referencePhysicalState := setReferencePhysicalState(Moving, oppositeDirection(CurrentDirection), CurrentFloor)
+				return referencePhysicalState
 
-				return 
+			} else{
 
-
+				referencePhysicalState := setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor)
+				return referencePhysicalState
+				} 
+		
 		case Moving:
-			ShouldIStop
+
+			shouldIStop := ShouldIStopOnNextFloor(myElevState)
+			if shouldIStop {
+				referencePhysicalState := setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
+				return referencePhysicalState
+
+			} else {
+				referencePhysicalState := setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
+				return referencePhysicalState
+			}
+		
 
 		case DoorOpen:
-			ShouldICloseDoors
+			referencePhysicalState := setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor)
+			return referencePhysicalState
 		}
 
 	}
 }
 
 
+func setReferencePhysicalState(behavior MotorBehaviour, direction Direction, floor int) PhysicalState{
+	var referencePhysicalState PhysicalState
+	referencePhysicalState.Behaviour = behavior
+	referencePhysicalState.MovDirection = direction
+	referencePhysicalState.Floor = floor
+	referencePhysicalState.MechError = false
 
-func orderSameDirection(me ElevState) bool{
-	var increment int;
-	direction := me.CabPhysics.Motor.MovDirection
+	return referencePhysicalState
+}
 
+
+func directionToIncrement(direction Direction) int{
 	if direction == Up {
-		increment = 1
+		return 1
 	}
-
 	if direction == Down {
-		increment = -1
+		return -1
 	}
-
-	for floor := me.CabPhysics.Floor; floor < NumFloors && floor >= 0; floor+=increment{
-		
-		if (me.HallOrders[floor][direction] == HallO){
-			return true
-		}
-		if (me.CabOrders[floor] == CabO){
-			return true
-		}
-	}
-	return false
+	return 0
 }
 
-func orderOnFloor(me ElevState) bool{	
-	floor := me.CabPhysics.Floor
+func oppositeDirection(direction Direction) Direction{
+	if direction == Up {
+		return Down
+	}
+	if direction == Down {
+		return Up
+	}
+	return 0
+}
 
-	if ((me.HallOrders[floor][Up] == HallO) || (me.HallOrders[floor][Down]) == HallO){
+
+func orderOnCurrentFloorInSameDirection(me ElevState) bool{
+	floor := me.PhysicalState.Floor
+	hallOrders := me.OrderState.HallOrders
+	cabOrders := me.OrderState.CabOrders
+	direction := me.PhysicalState.MovDirection
+	
+	if ((hallOrders[floor][direction] == HallO) || cabOrders[floor] == CabO){
 		return true
 	}
-	if (me.CabOrders[floor] == CabO){
+	return false
+}
+
+func orderOnCurrentFloorInOppositeDirection(me ElevState) bool{
+	floor := me.PhysicalState.Floor
+	hallOrders := me.OrderState.HallOrders
+	direction := me.PhysicalState.MovDirection *-1
+	
+	if (hallOrders[floor][direction] == HallO){
 		return true
 	}
 	return false
 }
 
-func orderOppositeDirection(me ElevState) bool{
-	var increment int;
-	direction := me.CabPhysics.Motor.MovDirection
+func orderInSameDirection(me ElevState) bool{
+	direction := me.PhysicalState.MovDirection
+	currentfloor := me.PhysicalState.Floor
+	hallOrders := me.OrderState.HallOrders
+	cabOrders := me.OrderState.CabOrders
+	increment := directionToIncrement(direction)
 
-	if direction == Up {
-		increment = -1
-	}
-
-	if direction == Down {
-		increment = 1
-	}
-
-	for floor := me.CabPhysics.Floor; floor < NumFloors && floor >= 0; floor+=increment{
+	for floor := currentfloor; floor < NumFloors && floor >= 0; floor+=increment{
 		
-		if (me.HallOrders[floor][direction] == HallO){
+		if (hallOrders[floor][direction] == HallO){
 			return true
 		}
-		if (me.CabOrders[floor] == CabO){
+		if (cabOrders[floor] == CabO){
 			return true
 		}
 	}
@@ -110,6 +151,38 @@ func orderOppositeDirection(me ElevState) bool{
 }
 
 
+func orderInOppositeDirection(me ElevState) bool{
+	direction := me.PhysicalState.MovDirection
+	currentfloor := me.PhysicalState.Floor
+	hallOrders := me.OrderState.HallOrders
+	cabOrders := me.OrderState.CabOrders
+	increment := directionToIncrement(direction) * -1
 
 
+	for floor := currentfloor; floor < NumFloors && floor >= 0; floor+=increment{
+		
+		if (hallOrders[floor][direction] == HallO){
+			return true
+		}
+		if (cabOrders[floor] == CabO){
+			return true
+		}
+	}
+	return false
+}
 
+
+func ShouldIStopOnNextFloor(me ElevState) bool{
+	direction := me.PhysicalState.MovDirection
+	nextFloor := me.PhysicalState.Floor + directionToIncrement(direction)
+	hallOrders := me.OrderState.HallOrders
+	cabOrders := me.OrderState.CabOrders
+
+	if (hallOrders[nextFloor][direction] == HallO){
+		return true
+	}
+	if (cabOrders[nextFloor] == CabO){
+		return true
+	}
+	return false
+}
