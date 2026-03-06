@@ -49,8 +49,11 @@ func Controller(
 			stateChanged = true
 		}
 		if ref.Floor != actualState.Floor {
+			if actualState.Behaviour != Moving {
+				stateChanged = true
+			}
 			actualState.Behaviour = Moving
-			stateChanged = true
+
 		}
 		if stateChanged {
 			physicalStateUpdate <- actualState

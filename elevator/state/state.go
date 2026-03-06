@@ -35,8 +35,12 @@ func StateKeeper(
 	physicalState := &me.PhysicalState
 	stateToController <- *physicalState
 
+	var lastOrdersWithConsensus OrdersWithConsesus
+	var lastPhysics PhysicalState
+
 	for {
 		PrintElevState(*me)
+		sendToController := true
 		select {
 		case buttonEvent := <-buttonClick:
 			handleButton(&wView, buttonEvent)
@@ -55,16 +59,24 @@ func StateKeeper(
 				physics[elev] = wView.ElevStates[elev].PhysicalState
 			}
 			ordersWithConsesus := findConsensus(wView)
-			relevantOrders := hra.HRA(ordersWithConsesus, physics, wView.NetError)
-			ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
-			_ = ref
-			refToController <- ref
+			if ordersWithConsesus != lastOrdersWithConsensus || lastPhysics != me.PhysicalState {
+				relevantOrders := hra.HRA(ordersWithConsesus, physics, wView.NetError)
+				ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
+				_ = ref
+				refToController <- ref
+			} else {
+				sendToController = false
+			}
+			lastOrdersWithConsensus = ordersWithConsesus
+			lastPhysics = me.PhysicalState
 		}
 		ordersWithConsesus := findConsensus(wView)
 
 		ordersWithConsesusToHardware <- ordersWithConsesus
 		physicsToHardware <- *physicalState
-		stateToController <- *physicalState
+		if sendToController {
+			stateToController <- *physicalState
+		}
 
 	}
 }

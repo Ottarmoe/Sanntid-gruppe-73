@@ -26,12 +26,12 @@ func main() {
 	sense_floor := make(chan int)
 	sense_obstr := make(chan bool)
 	sense_stop := make(chan bool)
-	int_mot := make(chan PhysicalState)
+	int_mot := make(chan PhysicalState, 10)
 	int_mech := make(chan bool)
 
 	ref_request := make(chan struct{})
 	ref_to_controller := make(chan PhysicalState)
-	stat_to_controller := make(chan PhysicalState)
+	stat_to_controller := make(chan PhysicalState, 10)
 
 	ordersWithConsesusToHardware := make(chan OrdersWithConsesus)
 	physicsToHardware := make(chan PhysicalState)
