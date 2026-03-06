@@ -4,6 +4,7 @@ import (
 	// . "elevator/elevatorConstants"
 	// "elevio"
 	"fmt"
+	. "elevator/stateTypes"
 )
 
 func PrintElevState(sta ElevState) {

@@ -2,7 +2,7 @@ package hardwareControl
 
 import (
 	. "elevator/elevatorConstants"
-	. "elevator/state"
+	. "elevator/stateTypes"
 	. "elevio"
 )
 

@@ -1,5 +1,9 @@
 package state
 
+import (
+	. "elevator/stateTypes"
+)
+
 func handleFloor(physicalState *PhysicalState, event int) {	
 	physicalState.Floor = event
 }

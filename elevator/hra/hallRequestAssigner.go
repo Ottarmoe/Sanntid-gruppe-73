@@ -6,7 +6,7 @@ import (
 	"os/exec"
 
 	. "elevator/elevatorConstants"
-	. "elevator/state"
+	. "elevator/stateTypes"
 )
 
 // Struct members must be public in order to be accessible by json.Marshal/.Unmarshal

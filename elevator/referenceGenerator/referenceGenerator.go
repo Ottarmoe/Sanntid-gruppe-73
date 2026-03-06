@@ -2,80 +2,76 @@ package referenceGenerator
 
 import (
 	//. "elevator/hra"
-	. "elevator/state"
+	. "elevator/stateTypes"
 	. "elevator/elevatorConstants"
 )
 
-func ReferenceGenerator(physicalState <-chan PhysicalState, ourOrders <-chan OurOrders) PhysicalState {
+func ReferenceGenerator(myPhysicalState PhysicalState, myOrders OurOrders) PhysicalState {
 //TO DO: change hallorders to the assigned hall orders, not the ones from the worldview. 
 // The hall orders from the worldview are the ones that have not been assigned to an elevator yet,
-//  but the reference generator should use the assigned hall orders, which are in the orderstate of the elevstate.
-	for {
-		myPhysicalState := <-physicalState
-		myOrders := <-ourOrders
-		
-		CurrentFloor := myPhysicalState.Floor
-		CurrentDirection := myPhysicalState.MovDirection
+//  but the reference generator should use the assigned hall orders, which are in the orderstate of the elevstate.	
+	CurrentFloor := myPhysicalState.Floor
+	CurrentDirection := myPhysicalState.MovDirection
 
-	
-		switch myPhysicalState.Behaviour{
 
-		case Idle:
+	switch myPhysicalState.Behaviour{
 
-			anyOrdersOnFloorInSameDirection := orderOnCurrentFloorInSameDirection(myPhysicalState, myOrders)
-			if anyOrdersOnFloorInSameDirection {
-				
-				referencePhysicalState := setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor)
-				return referencePhysicalState
-			}
+	case Idle:
+
+		anyOrdersOnFloorInSameDirection := orderOnCurrentFloorInSameDirection(myPhysicalState, myOrders)
+		if anyOrdersOnFloorInSameDirection {
 			
-
-			anyOrdersInSameDirection := orderInSameDirection(myPhysicalState, myOrders)
-			if anyOrdersInSameDirection {
-
-				referencePhysicalState := setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor)
-				return referencePhysicalState
-			}
-
-			anyOrdersOnFloorInOppositeDirection := orderOnCurrentFloorInOppositeDirection(myPhysicalState, myOrders)
-			if anyOrdersOnFloorInOppositeDirection {
-
-				referencePhysicalState := setReferencePhysicalState(DoorOpen, oppositeDirection(CurrentDirection), CurrentFloor)
-				return referencePhysicalState
-			}
-
-			anyOrdersInOppositeDirection := orderInOppositeDirection(myPhysicalState, myOrders)
-			if anyOrdersInOppositeDirection {
-
-
-				referencePhysicalState := setReferencePhysicalState(Moving, oppositeDirection(CurrentDirection), CurrentFloor)
-				return referencePhysicalState
-
-			} else{
-
-				referencePhysicalState := setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor)
-				return referencePhysicalState
-				} 
-		
-		case Moving:
-
-			shouldIStop := ShouldIStopOnNextFloor(myPhysicalState, myOrders)
-			if shouldIStop {
-				referencePhysicalState := setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
-				return referencePhysicalState
-
-			} else {
-				referencePhysicalState := setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
-				return referencePhysicalState
-			}
+			referencePhysicalState := setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor)
+			return referencePhysicalState
+		}
 		
 
-		case DoorOpen:
-			referencePhysicalState := setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor)
+		anyOrdersInSameDirection := orderInSameDirection(myPhysicalState, myOrders)
+		if anyOrdersInSameDirection {
+
+			referencePhysicalState := setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor)
 			return referencePhysicalState
 		}
 
-	}
+		anyOrdersOnFloorInOppositeDirection := orderOnCurrentFloorInOppositeDirection(myPhysicalState, myOrders)
+		if anyOrdersOnFloorInOppositeDirection {
+
+			referencePhysicalState := setReferencePhysicalState(DoorOpen, oppositeDirection(CurrentDirection), CurrentFloor)
+			return referencePhysicalState
+		}
+
+		anyOrdersInOppositeDirection := orderInOppositeDirection(myPhysicalState, myOrders)
+		if anyOrdersInOppositeDirection {
+
+
+			referencePhysicalState := setReferencePhysicalState(Moving, oppositeDirection(CurrentDirection), CurrentFloor)
+			return referencePhysicalState
+
+		} else{
+
+			referencePhysicalState := setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor)
+			return referencePhysicalState
+			} 
+	
+	case Moving:
+
+		shouldIStop := ShouldIStopOnNextFloor(myPhysicalState, myOrders)
+		if shouldIStop {
+			referencePhysicalState := setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
+			return referencePhysicalState
+
+		} else {
+			referencePhysicalState := setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
+			return referencePhysicalState
+		}
+	
+
+	case DoorOpen:
+		referencePhysicalState := setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor)
+		return referencePhysicalState
+	}	
+
+	return myPhysicalState
 }
 
 

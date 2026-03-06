@@ -3,6 +3,7 @@ package state
 import (
 	. "elevator/elevatorConstants"
 	. "elevio"
+	. "elevator/stateTypes"
 	// "fmt"
 )
 
