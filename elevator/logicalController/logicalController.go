@@ -62,24 +62,22 @@ func Controller(
 			referenceRequest <- struct{}{}
 		}
 		//wait for any change in state, or the arrival of a new reference
-		if actualState != ref {
-			select {
-			case newActual := <-actualStates:
-				newActual.MechError = false //controller always tries to move as if it is fully functional
-				actualState = newActual
-			case _ = <-doorClosed:
-				actualState.Behaviour = Idle
-				stateChanged = true
+		select {
+		case newActual := <-actualStates:
+			newActual.MechError = false //controller always tries to move as if it is fully functional
+			actualState = newActual
+		case _ = <-doorClosed:
+			actualState.Behaviour = Idle
+			stateChanged = true
 
-			case ref := <-references:
-				expectedTime := 0.
-				expectedTime += math.Abs(float64(ref.Floor-actualState.Floor)) * 7.
-				if actualState.Behaviour == DoorOpen {
-					expectedTime += 4.
-				}
-				expectedTime++
-				newDeadLine <- expectedTime
+		case ref = <-references:
+			expectedTime := 0.
+			expectedTime += math.Abs(float64(ref.Floor-actualState.Floor)) * 7.
+			if actualState.Behaviour == DoorOpen {
+				expectedTime += 4.
 			}
+			expectedTime++
+			newDeadLine <- expectedTime
 		}
 	}
 
@@ -100,7 +98,7 @@ func doors(HoldOpenFor <-chan float64, doorsClosed chan<- struct{}, obstruction 
 		case deadline := <-HoldOpenFor:
 			go burnoutTimer(deadline, burnoutReturn)
 			numTimers++
-		case obs := <-obstruction:
+		case obs = <-obstruction:
 			if !obs {
 				numTimers++
 				go burnoutTimer(3., burnoutReturn)

@@ -6,6 +6,7 @@ import (
 	"elevator/referenceGenerator"
 	. "elevator/stateTypes"
 	. "elevio"
+	"fmt"
 )
 
 // obstruction is not considered a state, and is handled internally by the door system
@@ -24,11 +25,11 @@ func StateKeeper(
 	referenceRequest <-chan struct{},
 	refToController chan<- PhysicalState,
 ) {
-
+	fmt.Print("hello world\n")
 	var wView ElevWorldView = initWorldView(id, initfloor)
 	me := &wView.ElevStates[id]
 	physicalState := &me.PhysicalState
-	stateToController <- *physicalState
+	//stateToController <- *physicalState
 
 	for {
 		PrintElevState(*me)
