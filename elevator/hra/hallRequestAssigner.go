@@ -28,7 +28,7 @@ func HRA(
 	orders state.OrdersWithConsesus,
 	physics [NumElevators]PhysicalState,
 	NetError [3]bool,
-) [][2]bool {
+) OurOrders {
 
 	hraExecutable := "hra/hall_request_assigner"
 	id := orders.ID
@@ -75,7 +75,19 @@ func HRA(
 	//	fmt.Printf("%6v :  %+v\n", k, v)
 	//}
 
-	return (*output)[fmt.Sprintf("%d", id)]
+
+	ourOrders := OurOrders{ //////////////////////////
+	HallOrders: func() [NumFloors][2]bool {
+		var arr [NumFloors][2]bool
+		for i := range arr {
+			arr[i] = (*output)[fmt.Sprintf("%d", id)][i]
+		}
+		return arr
+	}(),
+	CabOrders: orders.CabOrders[id],
+	}
+
+	return ourOrders
 }
 
 func Test() {

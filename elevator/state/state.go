@@ -70,6 +70,11 @@ type OrdersWithConsesus struct {
 	CabOrders  [NumElevators][NumFloors]bool
 }
 
+type OurOrders struct {
+	HallOrders [NumFloors][2]bool
+	CabOrders  [NumFloors]bool
+}
+
 // obstruction is not considered a state, and is handled internally by the door system
 func StateKeeper(
 	id int,
