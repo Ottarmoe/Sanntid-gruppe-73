@@ -8,6 +8,7 @@ import (
 	. "elevator/hardwareControl"
 
 	// referenceGenerator "elevator/referenceGenerator"
+	"elevator/logicalController"
 	"elevator/state"
 	"elevio"
 	//"elevator/hra"
@@ -26,9 +27,9 @@ func main() {
 	int_mot := make(chan state.PhysicalState)
 	int_mech := make(chan bool)
 
-	ref_gen := make(chan struct{})
-	ref_Cont := make(chan state.PhysicalState)
-	stat_Cont := make(chan state.PhysicalState)
+	ref_request := make(chan struct{})
+	ref_to_controller := make(chan state.PhysicalState)
+	stat_to_controller := make(chan state.PhysicalState)
 
 	ordersWithConsesusToHardware := make(chan state.OrdersWithConsesus)
 	physicsToHardware := make(chan state.PhysicalState)
@@ -41,8 +42,9 @@ func main() {
 	go state.StateKeeper(0, 0,
 		sense_buttons, sense_floor, int_mot, int_mech,
 		ordersWithConsesusToHardware, physicsToHardware,
-		stat_Cont, ref_gen, ref_Cont)
+		stat_to_controller, ref_request, ref_to_controller)
 	go HardWareControl(physicsToHardware, ordersWithConsesusToHardware)
+	go logicalController.Controller(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
 	// go referenceGenerator.ReferenceGenerator(stat_Gen)
 
 	// var d elevio.MotorDirection = elevio.MD_Up
