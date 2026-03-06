@@ -5,8 +5,9 @@ import (
 	. "elevio"
 )
 
-//Types
+// Types
 type hallOrderState int
+
 const (
 	HallNO hallOrderState = iota
 	HallO
@@ -14,6 +15,7 @@ const (
 )
 
 type cabOrderState int
+
 const (
 	CabNO cabOrderState = iota
 	CabO
@@ -21,29 +23,31 @@ const (
 )
 
 type Direction int
+
 const (
 	Up Direction = iota
 	Down
 )
 
 type MotorBehaviour int
+
 const (
 	Idle MotorBehaviour = iota
 	Moving
 	DoorOpen
 )
 
-//Building the world view struct
+// Building the world view struct
 type PhysicalState struct {
 	Behaviour    MotorBehaviour
 	MovDirection Direction
-	Floor 		 int
+	Floor        int
 	MechError    bool
 }
 
 type OrderState struct {
-	HallOrders   [NumFloors][2]hallOrderState //0 is down, 1 is up, use "direction"
-	CabOrders    [NumFloors]cabOrderState
+	HallOrders [NumFloors][2]hallOrderState //0 is down, 1 is up, use "direction"
+	CabOrders  [NumFloors]cabOrderState
 }
 
 type ElevState struct { //States to be mirrored to other elevators
@@ -52,19 +56,18 @@ type ElevState struct { //States to be mirrored to other elevators
 }
 
 type ElevWorldView struct {
-	ID    		   	int
-	ElevStates 	    [NumElevators]ElevState
-	CabArchiveSeen 	[NumElevators]bool
-	CabAgreement    [NumElevators][NumFloors]bool
-	NetError        [NumElevators]bool
+	ID             int
+	ElevStates     [NumElevators]ElevState
+	CabArchiveSeen [NumElevators]bool
+	CabAgreement   [NumElevators][NumFloors]bool
+	NetError       [NumElevators]bool
 }
 
-//Consesus struct
+// Consesus struct
 type OrdersWithConsesus struct {
-	HallOrders   [NumFloors][2]bool //0 is down, 1 is up, use "direction"
-	CabOrders    [NumFloors]bool
+	HallOrders [NumFloors][2]bool //0 is down, 1 is up, use "direction"
+	CabOrders  [NumElevators][NumFloors]bool
 }
-
 
 // obstruction is not considered a state, and is handled internally by the door system
 func StateKeeper(
@@ -74,19 +77,20 @@ func StateKeeper(
 	floorReached <-chan int,
 	motor <-chan PhysicalState,
 	mechError <-chan bool,
-	stateComRefGenerator chan<- ElevWorldView,
-	stateComController chan<- ElevWorldView,
-	stateComInspector chan<- ElevWorldView,
-	ordersWithConsesusToHardware chan<- OrdersWithConsesus,
-    physicsToHardware chan<- PhysicalState,
-	) {
 
-	var wView ElevWorldView = initWorldView(id,initfloor);
-	elevator := &wView.Elevs[id]	
-	physicalState := &elevator.PhysicalState
+	ordersWithConsesusToHardware chan<- OrdersWithConsesus,
+	physicsToHardware chan<- PhysicalState,
+
+	stateToController chan<- ElevWorldView,
+	referenceRequest chan<- struct{},
+) {
+
+	var wView ElevWorldView = initWorldView(id, initfloor)
+	me := &wView.ElevStates[id]
+	physicalState := &me.PhysicalState
 
 	for {
-		PrintElevState(*elevator)
+		PrintElevState(*me)
 		select {
 		case buttonEvent := <-buttonClick:
 			handleButton(&wView, buttonEvent)
@@ -108,27 +112,25 @@ func StateKeeper(
 	}
 }
 
-
 func initWorldView(id int, initfloor int) ElevWorldView {
 	var wView ElevWorldView
 
 	wView.ID = id
 	for elev := 0; elev < NumElevators; elev++ {
-		wView.Elevs[elev].NetError = true
-		wView.Elevs[elev].CabPriority = true
+		wView.NetError[elev] = true
+		wView.CabArchiveSeen[elev] = false
 
 		for floor := 0; floor < NumFloors; floor++ {
-			wView.Elevs[elev].HallOrders[floor][Down] = HallNO
-			wView.Elevs[elev].HallOrders[floor][Up] = HallNO
-			wView.Elevs[elev].CabOrders[floor] = CabUO
+			wView.ElevStates[elev].OrderState.HallOrders[floor][Down] = HallNO
+			wView.ElevStates[elev].OrderState.HallOrders[floor][Up] = HallNO
+			wView.ElevStates[elev].OrderState.CabOrders[floor] = CabUO
 		}
 	}
 
-	me := &wView.Elevs[id]
-	me.NetError = true //trust me bro
-	me.CabMechError = false
-	me.CabPhysics.Motor.Behaviour = Idle
-	me.CabPhysics.Floor = initfloor
+	me := &wView.ElevStates[id]
+	me.PhysicalState.MechError = false
+	me.PhysicalState.Behaviour = Idle
+	me.PhysicalState.Floor = initfloor
 
 	return wView
 }
