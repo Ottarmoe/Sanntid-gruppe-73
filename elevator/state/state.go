@@ -71,7 +71,7 @@ type OrdersWithConsesus struct {
 }
 
 type OurOrders struct {
-	HallOrders [NumFloors][2]bool
+	HallOrders [NumFloors][2]bool //0 is down, 1 is up, use "direction"
 	CabOrders  [NumFloors]bool
 }
 
