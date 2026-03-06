@@ -52,12 +52,10 @@ func Controller(
 			actualState.Behaviour = Moving
 			stateChanged = true
 		}
-
 		if stateChanged {
 			physicalStateUpdate <- actualState
 		}
 		stateChanged = false
-
 		if actualState == ref {
 			referenceRequest <- struct{}{}
 		}
@@ -76,7 +74,7 @@ func Controller(
 			if actualState.Behaviour == DoorOpen {
 				expectedTime += 4.
 			}
-			expectedTime++
+			expectedTime += 2
 			newDeadLine <- expectedTime
 		}
 	}

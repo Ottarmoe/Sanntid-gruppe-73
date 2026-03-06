@@ -45,9 +45,9 @@ func HRA(
 		if !physics[elev].MechError && !NetError[elev] || elev == id {
 
 			input.States[fmt.Sprintf("%d", elev)] = HRAElevstate{
-				Behavior:    []string{"idle", "moving", "doorOpen"}[physics[id].Behaviour],
-				Floor:       physics[id].Floor,
-				Direction:   []string{"up", "Down"}[physics[id].MovDirection],
+				Behavior:    []string{"idle", "moving", "doorOpen"}[physics[elev].Behaviour],
+				Floor:       physics[elev].Floor,
+				Direction:   []string{"up", "down"}[physics[elev].MovDirection],
 				CabRequests: orders.CabOrders[elev][:],
 			}
 		}
@@ -74,16 +74,15 @@ func HRA(
 	//	fmt.Printf("%6v :  %+v\n", k, v)
 	//}
 
-
 	ourOrders := OurOrders{ //////////////////////////
-	HallOrders: func() [NumFloors][2]bool {
-		var arr [NumFloors][2]bool
-		for i := range arr {
-			arr[i] = (*output)[fmt.Sprintf("%d", id)][i]
-		}
-		return arr
-	}(),
-	CabOrders: orders.CabOrders[id],
+		HallOrders: func() [NumFloors][2]bool {
+			var arr [NumFloors][2]bool
+			for i := range arr {
+				arr[i] = (*output)[fmt.Sprintf("%d", id)][i]
+			}
+			return arr
+		}(),
+		CabOrders: orders.CabOrders[id],
 	}
 
 	return ourOrders

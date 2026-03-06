@@ -9,6 +9,10 @@ import (
 	"fmt"
 )
 
+func PrintSomething() {
+	fmt.Print("hello world\n")
+}
+
 // obstruction is not considered a state, and is handled internally by the door system
 func StateKeeper(
 	id int,
@@ -29,7 +33,7 @@ func StateKeeper(
 	var wView ElevWorldView = initWorldView(id, initfloor)
 	me := &wView.ElevStates[id]
 	physicalState := &me.PhysicalState
-	//stateToController <- *physicalState
+	stateToController <- *physicalState
 
 	for {
 		PrintElevState(*me)
@@ -39,11 +43,13 @@ func StateKeeper(
 		case floorEvent := <-floorReached:
 			handleFloor(physicalState, floorEvent)
 		case motorEvent := <-motor:
+			fmt.Print("motor update\n")
 			handleMotor(&wView, motorEvent)
 		case mechEvent := <-mechError:
+			fmt.Print("mech error %b\n", mechEvent)
 			handleMech(&wView, mechEvent)
 		case _ = <-referenceRequest:
-
+			fmt.Print("reference requested\n")
 			var physics [NumElevators]PhysicalState
 			for elev := 0; elev < NumElevators; elev++ {
 				physics[elev] = wView.ElevStates[elev].PhysicalState
@@ -52,17 +58,14 @@ func StateKeeper(
 			relevantOrders := hra.HRA(ordersWithConsesus, physics, wView.NetError)
 			ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
 			_ = ref
-			//refToController <- ref
+			refToController <- ref
 		}
 		ordersWithConsesus := findConsensus(wView)
 
 		ordersWithConsesusToHardware <- ordersWithConsesus
 		physicsToHardware <- *physicalState
-		//stateToController <- *physicalState
+		stateToController <- *physicalState
 
-		// stateComRefGenerator <- consensus
-		//stateComController<-consensus
-		//stateComInspector<-consensus
 	}
 }
 

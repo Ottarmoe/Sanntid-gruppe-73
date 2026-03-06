@@ -20,6 +20,7 @@ func main() {
 	//tests.TimeHRA()
 	//serverAdress := fmt.Sprintf("localhost:%d", 15657)
 	elevio.Init("localhost:15657", NumFloors)
+	//state.PrintSomething()
 
 	sense_buttons := make(chan elevio.ButtonEvent)
 	sense_floor := make(chan int)
