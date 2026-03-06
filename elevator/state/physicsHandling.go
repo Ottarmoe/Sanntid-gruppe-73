@@ -5,7 +5,7 @@ func handleFloor(physicalState *PhysicalState, event int) {
 }
 
 func handleMotor(wv *ElevWorldView, event PhysicalState) {
-	elevator := &wv.Elevs[wv.ID]	
+	elevator := &wv.ElevStates[wv.ID]	
 	physics := &elevator.PhysicalState
 
 	physics.Behaviour = event.Behaviour
@@ -15,5 +15,5 @@ func handleMotor(wv *ElevWorldView, event PhysicalState) {
 }
 
 func handleMech(wv *ElevWorldView, event bool) {
-	wv.Elevs[wv.ID].MechError = event
+	wv.ElevStates[wv.ID].PhysicalState.MechError = event
 }
