@@ -65,7 +65,7 @@ type ElevWorldView struct {
 
 // Consesus struct
 type OrdersWithConsesus struct {
-	ID int
+	ID         int
 	HallOrders [NumFloors][2]bool //0 is down, 1 is up, use "direction"
 	CabOrders  [NumElevators][NumFloors]bool
 }
@@ -82,8 +82,9 @@ func StateKeeper(
 	ordersWithConsesusToHardware chan<- OrdersWithConsesus,
 	physicsToHardware chan<- PhysicalState,
 
-	stateToController chan<- ElevWorldView,
+	stateToController chan<- PhysicalState,
 	referenceRequest chan<- struct{},
+	refToController chan<- PhysicalState,
 ) {
 
 	var wView ElevWorldView = initWorldView(id, initfloor)
