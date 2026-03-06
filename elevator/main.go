@@ -10,6 +10,7 @@ import (
 	// referenceGenerator "elevator/referenceGenerator"
 	"elevator/logicalController"
 	"elevator/state"
+	. "elevator/stateTypes"
 	"elevio"
 	//"elevator/hra"
 )
@@ -24,15 +25,15 @@ func main() {
 	sense_floor := make(chan int)
 	sense_obstr := make(chan bool)
 	sense_stop := make(chan bool)
-	int_mot := make(chan state.PhysicalState)
+	int_mot := make(chan PhysicalState)
 	int_mech := make(chan bool)
 
 	ref_request := make(chan struct{})
-	ref_to_controller := make(chan state.PhysicalState)
-	stat_to_controller := make(chan state.PhysicalState)
+	ref_to_controller := make(chan PhysicalState)
+	stat_to_controller := make(chan PhysicalState)
 
-	ordersWithConsesusToHardware := make(chan state.OrdersWithConsesus)
-	physicsToHardware := make(chan state.PhysicalState)
+	ordersWithConsesusToHardware := make(chan OrdersWithConsesus)
+	physicsToHardware := make(chan PhysicalState)
 
 	go elevio.PollButtons(sense_buttons)
 	go elevio.PollFloorSensor(sense_floor)
