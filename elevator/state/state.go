@@ -65,6 +65,7 @@ type ElevWorldView struct {
 
 // Consesus struct
 type OrdersWithConsesus struct {
+	ID int
 	HallOrders [NumFloors][2]bool //0 is down, 1 is up, use "direction"
 	CabOrders  [NumElevators][NumFloors]bool
 }

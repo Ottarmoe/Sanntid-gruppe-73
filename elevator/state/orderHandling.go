@@ -27,18 +27,24 @@ func handleButton(vw *ElevWorldView, event ButtonEvent) {
 
 func findConsensus(wv ElevWorldView) OrdersWithConsesus {
 	var ordersWithConsesus OrdersWithConsesus
-
+	ordersWithConsesus.ID = wv.ID
+	for elev := 0; elev < NumElevators; elev++ {
+		for floor := 0; floor < NumFloors; floor++ {
+			ordersWithConsesus.CabOrders[elev][floor] = (wv.ElevStates[elev].OrderState.CabOrders[floor] == CabO)
+		}
+	}
 
 	for floor := 0; floor < NumFloors; floor++ {
+		//check for consensus on _our_ hall and cab order states
 		hallDownExists := false
 		hallUpExists := false
 		cabExists := false
-		elevExists := false
+		anyElevExists := false
 		for elev := 0; elev < NumElevators; elev++ {
 			peerHallOrders := &wv.ElevStates[elev].OrderState.HallOrders
 
-			if wv.NetError[elev] == false {
-				elevExists = true
+			if wv.NetError[elev] == false && wv.ID != elev {
+				anyElevExists = true
 				if peerHallOrders[floor][Up] == HallO {
 					hallDownExists = true
 				}
@@ -53,20 +59,20 @@ func findConsensus(wv ElevWorldView) OrdersWithConsesus {
 		HallOrders := &wv.ElevStates[wv.ID].OrderState.HallOrders
 		CabOrders := &wv.ElevStates[wv.ID].OrderState.CabOrders
 
-		if (!elevExists || hallDownExists) && (HallOrders[floor][Down] == HallO) {
+		if (!anyElevExists || hallDownExists) && (HallOrders[floor][Down] == HallO) {
 			ordersWithConsesus.HallOrders[floor][Down] = true
 		} else {
 			ordersWithConsesus.HallOrders[floor][Down] = false
 		}
-		if (!elevExists || hallUpExists) && (HallOrders[floor][Up] == HallO) {
+		if (!anyElevExists || hallUpExists) && (HallOrders[floor][Up] == HallO) {
 			ordersWithConsesus.HallOrders[floor][Up] = true
 		} else {
 			ordersWithConsesus.HallOrders[floor][Up] = false
 		}
-		if (!elevExists || cabExists) && (CabOrders[floor] == CabO) {
-			ordersWithConsesus.CabOrders[floor] = true
+		if (!anyElevExists || cabExists) && (CabOrders[floor] == CabO) {
+			ordersWithConsesus.CabOrders[wv.ID][floor] = true
 		} else {
-			ordersWithConsesus.CabOrders[floor] = false
+			ordersWithConsesus.CabOrders[wv.ID][floor] = false
 		}
 	}
 	return ordersWithConsesus

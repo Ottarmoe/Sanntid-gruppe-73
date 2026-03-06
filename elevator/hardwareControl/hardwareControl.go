@@ -2,14 +2,14 @@ package hardwareControl
 
 import (
 	. "elevator/elevatorConstants"
-	. "elevio"
 	. "elevator/state"
+	. "elevio"
 )
 
 func HardWareControl(physicsToHardware <-chan PhysicalState, ordersWithConsesusToHardware <-chan OrdersWithConsesus) {
 	for {
 		select {
-		case physicalState := <-physicsToHardware:	
+		case physicalState := <-physicsToHardware:
 			SetFloorIndicator(physicalState.Floor)
 
 			if physicalState.Behaviour == Idle {
@@ -17,7 +17,7 @@ func HardWareControl(physicsToHardware <-chan PhysicalState, ordersWithConsesusT
 				// SetDoorOpenLamp(false)
 			}
 
-			if physicalState.Behaviour == Moving{
+			if physicalState.Behaviour == Moving {
 				// SetDoorOpenLamp(false)
 				if physicalState.MovDirection == Up {
 					SetMotorDirection(1)
@@ -35,8 +35,8 @@ func HardWareControl(physicsToHardware <-chan PhysicalState, ordersWithConsesusT
 			for floor := 0; floor < NumFloors; floor++ {
 				SetButtonLamp(BT_HallDown, floor, ordersWithConsesus.HallOrders[floor][Down])
 				SetButtonLamp(BT_HallUp, floor, ordersWithConsesus.HallOrders[floor][Up])
-				SetButtonLamp(BT_Cab, floor, ordersWithConsesus.CabOrders[floor])
-			}	
+				SetButtonLamp(BT_Cab, floor, ordersWithConsesus.CabOrders[ordersWithConsesus.ID][floor])
+			}
 		}
 	}
 }
