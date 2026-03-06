@@ -6,7 +6,6 @@ import (
 	"os/exec"
 
 	. "elevator/elevatorConstants"
-	"elevator/state"
 	. "elevator/state"
 )
 
@@ -25,7 +24,7 @@ type HRAInput struct {
 }
 
 func HRA(
-	orders state.OrdersWithConsesus,
+	orders OrdersWithConsesus,
 	physics [NumElevators]PhysicalState,
 	NetError [3]bool,
 ) OurOrders {
