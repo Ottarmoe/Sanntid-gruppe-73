@@ -1,2 +1,60 @@
 package logicalController
 
+import (
+	. "elevator/elevatorConstants"
+	. "elevator/state"
+	"time"
+)
+
+func Controller(
+	references <-chan PhysicalState,
+	actualStates <-chan PhysicalState,
+	referenceRequest chan<- struct{},
+	mechError chan<- bool
+	){
+	
+	actualState := <-actualStates
+	ref := <-references
+
+	for{
+		if actualState == ref{
+
+		}
+
+
+		select{
+		case newActual := <- actualStates:
+			newActual.mechError = false //controller always tries to move as if it is fully functional
+			actualState = newActual
+		case ref = <-references
+		}
+	}
+	
+}
+
+func BurnoutTimer(span float, burnout chan<- struct{}){
+	time.Sleep(time.Second * span)
+	burnout<-struct{}
+}
+
+func Inspector(ExpectedTimeToNextGoal <-chan float, mechErrorSignal chan<- bool){
+	numTimers = 0
+	burnoutReturn = make(chan struct{})
+
+	for{
+		select{
+		case deadline := <-ExpectedTimeToNextGoal:
+			numTimers++
+			go BurnoutTimer(deadline, burnoutReturn)
+			if numTimers == 1{
+				mechErrorSignal <- false
+			}
+		case _ = <-burnoutReturn:
+			numTimers--
+			if numTimers == 0{
+				mechErrorSignal <- true
+			}
+		}
+	}
+
+}
