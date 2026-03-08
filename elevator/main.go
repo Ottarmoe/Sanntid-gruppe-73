@@ -1,31 +1,24 @@
 package main
 
 import (
-	. "elevator/network"
-	"elevator/networkLow"
-	// "elevator/networkLow"
-	//"elevator/tests"
 	. "elevator/elevatorConstants"
 	. "elevator/hardwareControl"
+	. "elevator/network"
+	"elevator/networkLow"
 
-	// referenceGenerator "elevator/referenceGenerator"
+	// "elevator/referenceGenerator"
 	"elevator/logicalController"
 	"elevator/state"
 	. "elevator/stateTypes"
 	"elevio"
-
-	//"elevator/hra"
 	"fmt"
 )
 
 func main() {
 	ConstantsInit()
-	// tests.TestMultipleServers()
-	//tests.TimeHRA()
 	serverAdress := fmt.Sprintf("localhost:%d", 15657+ID())
 	elevio.Init(serverAdress, NumFloors)
 	networkLow.Init()
-	//state.PrintSomething()
 
 	sense_buttons := make(chan elevio.ButtonEvent)
 	sense_floor := make(chan int)
@@ -38,7 +31,7 @@ func main() {
 	ref_to_controller := make(chan PhysicalState)
 	stat_to_controller := make(chan PhysicalState, 10)
 
-	netMessageToNetworkCommunicator := make(chan NetMessage)
+	netMessageToNetworkSender := make(chan NetMessage)
 	netMessageToState := make(chan NetMessage)
 
 	ordersWithConsesusToHardware := make(chan OrdersWithConsesus)
@@ -53,10 +46,10 @@ func main() {
 		sense_buttons, sense_floor, int_mot, int_mech,
 		ordersWithConsesusToHardware, physicsToHardware,
 		stat_to_controller, ref_request, ref_to_controller,
-		netMessageToNetworkCommunicator,netMessageToState)
+		netMessageToNetworkSender,netMessageToState)
 	go HardWareControl(physicsToHardware, ordersWithConsesusToHardware)
 	go logicalController.Controller(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
-	go NetworkCommunicator(netMessageToNetworkCommunicator)
+	go NetworkSender(netMessageToNetworkSender)
 	go NetworkReceiver(netMessageToState)
 	
 	// go referenceGenerator.ReferenceGenerator(stat_Gen)

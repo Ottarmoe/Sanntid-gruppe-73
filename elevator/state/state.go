@@ -29,7 +29,7 @@ func StateKeeper(
 	referenceRequest <-chan struct{},
 	refToController chan<- PhysicalState,
 
-	netMessageToNetworkCommunicator chan<- NetMessage,
+	netMessageToNetworkSender chan<- NetMessage,
 	netMessageToState <-chan NetMessage,
 ) {
 	var wView ElevWorldView = initWorldView(id, initfloor)
@@ -90,7 +90,7 @@ func StateKeeper(
 			ElevState:  *me,
 			CabBackups: cabBackups,
 		}
-		netMessageToNetworkCommunicator <- netMessage
+		netMessageToNetworkSender <- netMessage
 
 		// if sendToController {
 		// 	stateToController <- *physicalState

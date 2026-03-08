@@ -62,7 +62,7 @@ type ElevWorldView struct {
 	NetError       [NumElevators]bool
 }
 
-//Netmessage 
+//NetMessage 
 type NetMessage struct {
 	ID			int
 	ElevState 	ElevState

@@ -3,23 +3,24 @@ package network
 import (
 	"elevator/networkLow"
 	// "fmt"
-	"time"
 	. "elevator/stateTypes"
+	"time"
+
 	// "elevator/elevatorConstants"
+	. "elevator/elevatorConstants"
 	"encoding/json"
 	"log"
-	. "elevator/elevatorConstants"
 )
 
-func NetworkCommunicator(netMessageToNetworkCommunicator <-chan NetMessage){
+func NetworkSender(netMessageToNetworkSender <-chan NetMessage){
 	timeToSend := make(chan struct{})
 	go sendRateTimer(timeToSend)
 	
-	netMessage := <- netMessageToNetworkCommunicator;
+	netMessage := <- netMessageToNetworkSender;
 
 	for{
 		select {
-		case netMessage = <- netMessageToNetworkCommunicator:
+		case netMessage = <- netMessageToNetworkSender:
 			
 		case <- timeToSend:	
 			    data, err := json.Marshal(netMessage)
@@ -35,6 +36,8 @@ func NetworkCommunicator(netMessageToNetworkCommunicator <-chan NetMessage){
 }
 
 func NetworkReceiver(netMessageToState chan<- NetMessage){
+	var prevNetMessage NetMessage
+	
 	for{
 		data, err := networkLow.Receive()
 		if err != nil {
@@ -53,7 +56,12 @@ func NetworkReceiver(netMessageToState chan<- NetMessage){
 			continue
 		}
 
+		if(netMessage == prevNetMessage){
+			continue
+		}
+
 		netMessageToState <- netMessage;
+		prevNetMessage = netMessage
 	}
 }
 
