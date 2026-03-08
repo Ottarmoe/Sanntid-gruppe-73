@@ -3,8 +3,8 @@ package state
 import (
 	// . "elevator/elevatorConstants"
 	// "elevio"
-	"fmt"
 	. "elevator/stateTypes"
+	"fmt"
 )
 
 func PrintElevState(sta ElevState) {
@@ -27,10 +27,27 @@ func PrintElevState(sta ElevState) {
 	)
 }
 
-// type NetMessage struct {
-// 	HallOrders   [NumFloors][2]hallOrderState //0 is down, 1 is up, use "direction"
-// 	CabOrders    [NumFloors]cabOrderState
-// 	CabFloor     int
-// 	CabMotor     MotorState
-// 	CabMechError bool
-// }
+func PrintNetMessage(msg NetMessage) {
+	fmt.Printf(`
+	ID: %v
+	ElevState:
+  OrderState:
+	  HallOrders: %v
+	  CabOrders: %v
+	PhysicalState:
+	  Behaviour: %v
+	  MovDirection: %v
+	  Floor: %v
+	  MechError: %v
+	CabBackups: %v
+	`,
+		msg.ID,
+		msg.ElevState.OrderState.HallOrders,
+		msg.ElevState.OrderState.CabOrders,
+		msg.ElevState.PhysicalState.Behaviour,
+		msg.ElevState.PhysicalState.MovDirection,
+		msg.ElevState.PhysicalState.Floor,
+		msg.ElevState.PhysicalState.MechError,
+		msg.CabBackups,
+	)
+}

@@ -2,8 +2,8 @@ package state
 
 import (
 	. "elevator/elevatorConstants"
-	"elevator/hra"
-	"elevator/referenceGenerator"
+	// "elevator/hra"
+	// "elevator/referenceGenerator"
 	. "elevator/stateTypes"
 	. "elevio"
 	"fmt"
@@ -28,19 +28,21 @@ func StateKeeper(
 	stateToController chan<- PhysicalState,
 	referenceRequest <-chan struct{},
 	refToController chan<- PhysicalState,
+
+	netMessageToNetworkCommunicator chan<- NetMessage,
+	netMessageToState <-chan NetMessage,
 ) {
-	fmt.Print("hello world\n")
 	var wView ElevWorldView = initWorldView(id, initfloor)
 	me := &wView.ElevStates[id]
 	physicalState := &me.PhysicalState
 	stateToController <- *physicalState
 
-	var lastOrdersWithConsensus OrdersWithConsesus
-	var lastPhysics PhysicalState
+	// var lastOrdersWithConsensus OrdersWithConsesus
+	// var lastPhysics PhysicalState
 
 	for {
-		PrintElevState(*me)
-		sendToController := true
+		// PrintElevState(*me)
+		// sendToController := true
 		select {
 		case buttonEvent := <-buttonClick:
 			handleButton(&wView, buttonEvent)
@@ -52,31 +54,47 @@ func StateKeeper(
 		case mechEvent := <-mechError:
 			fmt.Print("mech error %b\n", mechEvent)
 			handleMech(&wView, mechEvent)
-		case _ = <-referenceRequest:
-			fmt.Print("reference requested\n")
-			var physics [NumElevators]PhysicalState
-			for elev := 0; elev < NumElevators; elev++ {
-				physics[elev] = wView.ElevStates[elev].PhysicalState
-			}
-			ordersWithConsesus := findConsensus(wView)
-			if ordersWithConsesus != lastOrdersWithConsensus || lastPhysics != me.PhysicalState {
-				relevantOrders := hra.HRA(ordersWithConsesus, physics, wView.NetError)
-				ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
-				_ = ref
-				refToController <- ref
-			} else {
-				sendToController = false
-			}
-			lastOrdersWithConsensus = ordersWithConsesus
-			lastPhysics = me.PhysicalState
+		case netMessage := <-netMessageToState:
+			PrintNetMessage(netMessage)
+		// case _ = <-referenceRequest:
+		// 	fmt.Print("reference requested\n")
+		// 	var physics [NumElevators]PhysicalState
+		// 	for elev := 0; elev < NumElevators; elev++ {
+		// 		physics[elev] = wView.ElevStates[elev].PhysicalState
+		// 	}
+		// 	ordersWithConsesus := findConsensus(wView)
+		// 	if ordersWithConsesus != lastOrdersWithConsensus || lastPhysics != me.PhysicalState {
+		// 		relevantOrders := hra.HRA(ordersWithConsesus, physics, wView.NetError)
+		// 		ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
+		// 		_ = ref
+		// 		refToController <- ref
+		// 	} else {
+		// 		sendToController = false
+		// 	}
+		// 	lastOrdersWithConsensus = ordersWithConsesus
+		// 	lastPhysics = me.PhysicalState
 		}
-		ordersWithConsesus := findConsensus(wView)
 
+		//Update hardware
+		ordersWithConsesus := findConsensus(wView)
 		ordersWithConsesusToHardware <- ordersWithConsesus
 		physicsToHardware <- *physicalState
-		if sendToController {
-			stateToController <- *physicalState
+
+		//New state info to network
+		var cabBackups [NumElevators][NumFloors]CabOrderState
+		for elev := 0; elev < NumElevators; elev++ {
+			cabBackups[elev] = wView.ElevStates[elev].OrderState.CabOrders
 		}
+		netMessage := NetMessage{
+			ID:         id,
+			ElevState:  *me,
+			CabBackups: cabBackups,
+		}
+		netMessageToNetworkCommunicator <- netMessage
+
+		// if sendToController {
+		// 	stateToController <- *physicalState
+		// }
 
 	}
 }

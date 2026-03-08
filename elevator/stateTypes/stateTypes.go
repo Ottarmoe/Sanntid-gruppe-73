@@ -13,10 +13,10 @@ const (
 	HallOPR
 )
 
-type cabOrderState int
+type CabOrderState int
 
 const (
-	CabNO cabOrderState = iota
+	CabNO CabOrderState = iota
 	CabO
 	CabUO //unknown order
 )
@@ -46,7 +46,7 @@ type PhysicalState struct {
 
 type OrderState struct {
 	HallOrders [NumFloors][2]hallOrderState //0 is down, 1 is up, use "direction"
-	CabOrders  [NumFloors]cabOrderState
+	CabOrders  [NumFloors]CabOrderState
 }
 
 type ElevState struct { //States to be mirrored to other elevators
@@ -60,6 +60,13 @@ type ElevWorldView struct {
 	CabArchiveSeen [NumElevators]bool
 	CabAgreement   [NumElevators][NumFloors]bool
 	NetError       [NumElevators]bool
+}
+
+//Netmessage 
+type NetMessage struct {
+	ID			int
+	ElevState 	ElevState
+	CabBackups 	[NumElevators][NumFloors]CabOrderState //not needed by other elevators most of the time
 }
 
 // Consesus struct

@@ -2,33 +2,64 @@ package network
 
 import (
 	"elevator/networkLow"
-	"fmt"
+	// "fmt"
 	"time"
+	. "elevator/stateTypes"
+	// "elevator/elevatorConstants"
+	"encoding/json"
+	"log"
+	. "elevator/elevatorConstants"
 )
 
-func TestNodeCommunication(id int) error {
-	go periodicSendingOfId(id)
+func NetworkCommunicator(netMessageToNetworkCommunicator <-chan NetMessage){
+	timeToSend := make(chan struct{})
+	go sendRateTimer(timeToSend)
+	
+	netMessage := <- netMessageToNetworkCommunicator;
 
-	for {
-		data, err := networkLow.Receive()
-		if err != nil {
-			fmt.Println("Receive error:", err)
-			continue
+	for{
+		select {
+		case netMessage = <- netMessageToNetworkCommunicator:
+			
+		case <- timeToSend:	
+			    data, err := json.Marshal(netMessage)
+				if err != nil {
+					log.Println("send jsonmarshal error:", err)
+				}
+				err = networkLow.Send(data)
+				if err != nil {
+					log.Println("send error:", err)
+				}
 		}
-
-		networkLow.PrintMessage(data)
 	}
 }
 
-func periodicSendingOfId(id int) {
-	for i := 0; ; i++ {
-		data := []byte(fmt.Sprintf("Hello %d from %d", i, id))
-
-		err := networkLow.Send(data)
+func NetworkReceiver(netMessageToState chan<- NetMessage){
+	for{
+		data, err := networkLow.Receive()
 		if err != nil {
-			fmt.Println("Send error:", err)
+			log.Println("receive  error:", err) 
+			continue
 		}
 
-		time.Sleep(1 * time.Second)
+		var netMessage NetMessage
+		err = json.Unmarshal(data, &netMessage)
+		if err != nil {
+			log.Println("receive json unmarshal error:", err) 
+			continue
+		}
+		
+		if(netMessage.ID == ID()){
+			continue
+		}
+
+		netMessageToState <- netMessage;
+	}
+}
+
+func sendRateTimer(timeToSend chan<- struct{}) {
+	for {
+		time.Sleep(time.Second)
+		timeToSend <- struct{}{}
 	}
 }
