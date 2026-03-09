@@ -25,7 +25,7 @@ var broadcastAddr = &net.UDPAddr{
 //Simulate packet loss 
 //curl "http://localhost:8080/set_loss?prob=0"
 var (
-	packetLossProb float64 = 0 // 20% initial packet loss
+	packetLossProb float64 = 0 // 0% initial packet loss
 	probMutex      sync.RWMutex   // protects access to packetLossProb
 )
 
@@ -109,7 +109,7 @@ func Init() error {
 
 	addr := fmt.Sprintf(":%d", port)
 
-	fmt.Printf("With packet loss. Control server for ID %d running on %s\n", ID(), addr)
+	fmt.Println("Packet loss simulator running. Initial packet loss 0. Use command: curl http://localhost:8080/set_loss?prob=0.5 in another terminal to change packet loss during runtime. For id != 0, replace 8080 with 8080+id.")
 
 	go http.ListenAndServe(addr, nil)
 
@@ -119,7 +119,7 @@ func Init() error {
 func Send(data []byte) error {
 	//Simulate packet loss
 	if rand.Float64() < getPacketLossProb() {
-		fmt.Println("Packet not sent")
+		// fmt.Println("Packet not sent")
 		return nil // drop packet
 	}
 

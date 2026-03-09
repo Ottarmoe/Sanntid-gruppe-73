@@ -2,7 +2,6 @@ package network
 
 import (
 	"elevator/networkLow"
-	// "fmt"
 	. "elevator/stateTypes"
 	"time"
 
@@ -10,6 +9,7 @@ import (
 	. "elevator/elevatorConstants"
 	"encoding/json"
 	"log"
+	// "fmt"
 )
 
 func NetworkSender(netMessageToNetworkSender <-chan NetMessage){
@@ -69,7 +69,7 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 						netErrorToState <-  NetErrorNotification{ID: netMessage.ID, NetError: false}
 					}
 				}
-				resetTimer[netMessage.ID] <- struct{}{} //concider making non-blocking...
+				resetTimer[netMessage.ID] <- struct{}{} //concider making non-blocking...seems to work for now
 
 				//Avoid bothering state with duplicate messages
 				if(netMessage == prevNetMessage){
@@ -114,6 +114,8 @@ func timoutNotifier(id int,timeout chan int,resetTimer chan struct{}){
 }
 
 func receiver(receiveMessage chan<- NetMessage) {
+	// last := time.Now() //For debugging
+	
 	for{
 		data, err := networkLow.Receive()
 		if err != nil {
@@ -129,6 +131,12 @@ func receiver(receiveMessage chan<- NetMessage) {
 		if(netMessage.ID == ID()){
 			continue
 		}
+
+		//For debugging
+		// now := time.Now()
+    	// fmt.Println(now.Sub(last))
+    	// last = now
+
 		receiveMessage <- netMessage
 	}
 
