@@ -55,10 +55,11 @@ func StateKeeper(
 		case mechEvent := <-mechError:
 			fmt.Print("mech error %b\n", mechEvent)
 			handleMech(&wView, mechEvent)
-		case netMessage := <-netMessageToState:
-			PrintNetMessage(netMessage)
-		case netErrorNotification := <-netErrorToState:
+		// case netMessage := <-netMessageToState:
+		// 	PrintNetMessage(netMessage)
+		case netErrorNotification := <-netErrorToState: //burde dette caset og det over synkroniseres?
 			wView.NetError[netErrorNotification.ID] = netErrorNotification.NetError
+			fmt.Println("NetError:", wView.NetError)
 		// case _ = <-referenceRequest:
 		// 	fmt.Print("reference requested\n")
 		// 	var physics [NumElevators]PhysicalState

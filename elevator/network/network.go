@@ -13,7 +13,7 @@ import (
 )
 
 func NetworkSender(netMessageToNetworkSender <-chan NetMessage){
-	timeToSend := time.NewTicker(1 * time.Second)
+	timeToSend := time.NewTicker(time.Duration(BroadcastRate * float64(time.Second)))
 	
 	netMessage := <- netMessageToNetworkSender;
 
@@ -41,10 +41,10 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 	go receiver(receiveMessage)
 
 	var NetError [NumElevators]bool
-	var ReceivedPerSec [NumElevators]int
+	var ReceivedDuringInterval [NumElevators]int
 	for i := 0; i < NumElevators; i++ {
     	NetError[i] = true
-		ReceivedPerSec[i] = 0
+		ReceivedDuringInterval[i] = 0
 	}
 	timeout := make(chan int)
 	var resetTimer [NumElevators]chan struct{}
@@ -61,8 +61,8 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 			case netMessage := <- receiveMessage:
 				//Handle neterror
 				if(NetError[netMessage.ID]){
-					ReceivedPerSec[netMessage.ID]++
-					if(ReceivedPerSec[netMessage.ID] < 10){
+					ReceivedDuringInterval[netMessage.ID]++
+					if(ReceivedDuringInterval[netMessage.ID] < MessagesNeededWithinInterval){
 						continue
 					} else{
 						NetError[netMessage.ID] = false
@@ -83,10 +83,10 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 				if(!NetError[id]){
 					NetError[id] = true;
 					netErrorToState <-  NetErrorNotification{ID: id, NetError: true}
-					ReceivedPerSec[id] = 0;
+					ReceivedDuringInterval[id] = 0;
 					resetTimer[id] <- struct{}{}
 				} else{
-					ReceivedPerSec[id] = 0;
+					ReceivedDuringInterval[id] = 0;
 					resetTimer[id] <- struct{}{}
 				}
 		}
@@ -94,7 +94,7 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 }
 
 func timoutNotifier(id int,timeout chan int,resetTimer chan struct{}){
-	timer := time.NewTimer(1 * time.Second)
+	timer := time.NewTimer(time.Duration(NetErrorTimerLength * float64(time.Second)))
 	for{
 		select {
 			case <-timer.C:
@@ -106,9 +106,9 @@ func timoutNotifier(id int,timeout chan int,resetTimer chan struct{}){
 					select {
 					case <-timer.C:
 					default:
+					}
 				}
-			}
-			timer.Reset(1 * time.Second) // safe now
+				timer.Reset(time.Duration(NetErrorTimerLength * float64(time.Second)))
 		}
 	}
 }
@@ -117,7 +117,7 @@ func receiver(receiveMessage chan<- NetMessage) {
 	for{
 		data, err := networkLow.Receive()
 		if err != nil {
-			log.Println("receive  error:", err) 
+			// log.Println("receive  error:", err) 
 			continue
 		}
 		var netMessage NetMessage

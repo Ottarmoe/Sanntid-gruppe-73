@@ -6,6 +6,12 @@ import (
 	"syscall"
 	"context"
 	"golang.org/x/sys/unix"
+	"sync"
+	"math/rand"
+	"errors"
+	"net/http"
+	"strconv"
+	. "elevator/elevatorConstants"
 )
 
 var conn *net.UDPConn
@@ -14,6 +20,34 @@ var broadcastAddr = &net.UDPAddr{
 	IP:   net.IPv4bcast, // 255.255.255.255
 	Port: 30000,
 }
+
+
+//Simulate packet loss 
+//curl "http://localhost:8080/set_loss?prob=0"
+var (
+	packetLossProb float64 = 0 // 20% initial packet loss
+	probMutex      sync.RWMutex   // protects access to packetLossProb
+)
+
+func getPacketLossProb() float64 {
+	probMutex.RLock()
+	defer probMutex.RUnlock()
+	return packetLossProb
+}
+
+func SetPacketLoss(prob float64) {
+	probMutex.Lock()
+	defer probMutex.Unlock()
+	if prob < 0 {
+		prob = 0
+	} else if prob > 1 {
+		prob = 1
+	}
+	packetLossProb = prob
+	fmt.Printf("Packet loss probability set to %.2f%%\n", packetLossProb*100)
+}
+
+var ErrPacketDropped = errors.New("simulated packet loss")
 
 func Init() error {
 	lc := net.ListenConfig{
@@ -46,10 +80,49 @@ func Init() error {
 	}
 
 	conn = pc.(*net.UDPConn)
+
+	//Simulate packet loss
+	port := 8080 + ID()
+
+	http.HandleFunc("/set_loss", func(w http.ResponseWriter, r *http.Request) {
+
+		q := r.URL.Query().Get("prob")
+		if q == "" {
+			http.Error(w, "missing prob", 400)
+			return
+		}
+
+		prob, err := strconv.ParseFloat(q, 64)
+		if err != nil {
+			http.Error(w, "invalid prob", 400)
+			return
+		}
+
+		SetPacketLoss(prob)
+
+		fmt.Fprintf(w,
+			"Program ID %d packet loss set to %.2f%%\n",
+			ID(),
+			prob*100,
+		)
+	})
+
+	addr := fmt.Sprintf(":%d", port)
+
+	fmt.Printf("With packet loss. Control server for ID %d running on %s\n", ID(), addr)
+
+	go http.ListenAndServe(addr, nil)
+
 	return nil
 }
 
 func Send(data []byte) error {
+	//Simulate packet loss
+	if rand.Float64() < getPacketLossProb() {
+		fmt.Println("Packet not sent")
+		return nil // drop packet
+	}
+
     _, err := conn.WriteToUDP(data, broadcastAddr)
     return err
 }
@@ -62,6 +135,11 @@ func Receive() ([]byte, error) {
     if err != nil {
         return nil, err
     }
+
+	//Simulate packet loss
+	if rand.Float64() < getPacketLossProb() {
+		return nil, ErrPacketDropped // drop packet
+	}
 
     return buf[:n],nil
 }
