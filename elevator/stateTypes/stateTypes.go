@@ -62,11 +62,16 @@ type ElevWorldView struct {
 	NetError       [NumElevators]bool
 }
 
-//NetMessage 
+//Network 
 type NetMessage struct {
 	ID			int
 	ElevState 	ElevState
 	CabBackups 	[NumElevators][NumFloors]CabOrderState //not needed by other elevators most of the time
+}
+
+type NetErrorNotification struct { 
+	ID			int
+	NetError 	bool
 }
 
 // Consesus struct

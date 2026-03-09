@@ -31,6 +31,7 @@ func StateKeeper(
 
 	netMessageToNetworkSender chan<- NetMessage,
 	netMessageToState <-chan NetMessage,
+	netErrorToState <-chan NetErrorNotification,
 ) {
 	var wView ElevWorldView = initWorldView(id, initfloor)
 	me := &wView.ElevStates[id]
@@ -56,6 +57,8 @@ func StateKeeper(
 			handleMech(&wView, mechEvent)
 		case netMessage := <-netMessageToState:
 			PrintNetMessage(netMessage)
+		case netErrorNotification := <-netErrorToState:
+			wView.NetError[netErrorNotification.ID] = netErrorNotification.NetError
 		// case _ = <-referenceRequest:
 		// 	fmt.Print("reference requested\n")
 		// 	var physics [NumElevators]PhysicalState

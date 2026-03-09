@@ -33,6 +33,7 @@ func main() {
 
 	netMessageToNetworkSender := make(chan NetMessage)
 	netMessageToState := make(chan NetMessage)
+	netErrorToState := make(chan NetErrorNotification)
 
 	ordersWithConsesusToHardware := make(chan OrdersWithConsesus)
 	physicsToHardware := make(chan PhysicalState)
@@ -46,11 +47,11 @@ func main() {
 		sense_buttons, sense_floor, int_mot, int_mech,
 		ordersWithConsesusToHardware, physicsToHardware,
 		stat_to_controller, ref_request, ref_to_controller,
-		netMessageToNetworkSender,netMessageToState)
+		netMessageToNetworkSender,netMessageToState, netErrorToState)
 	go HardWareControl(physicsToHardware, ordersWithConsesusToHardware)
 	go logicalController.Controller(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
 	go NetworkSender(netMessageToNetworkSender)
-	go NetworkReceiver(netMessageToState)
+	go NetworkReceiver(netMessageToState, netErrorToState)
 	
 	// go referenceGenerator.ReferenceGenerator(stat_Gen)
 

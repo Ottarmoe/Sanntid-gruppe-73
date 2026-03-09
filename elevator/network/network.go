@@ -34,44 +34,82 @@ func NetworkSender(netMessageToNetworkSender <-chan NetMessage){
 	}
 }
 
-func NetworkReceiver(netMessageToState chan<- NetMessage){
+func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<- NetErrorNotification){
 	var prevNetMessage NetMessage
 
 	receiveMessage := make(chan NetMessage)
 	go receiver(receiveMessage)
 
 	var NetError [NumElevators]bool
-	for i := range NumElevators {
-    NetError[i] = true
+	var ReceivedPerSec [NumElevators]int
+	for i := 0; i < NumElevators; i++ {
+    	NetError[i] = true
+		ReceivedPerSec[i] = 0
 	}
-	var timers [NumElevators]*time.Timer
+	timeout := make(chan int)
+	var resetTimer [NumElevators]chan struct{}
 	for i := 0; i < NumElevators; i++ {
 		if(i == ID()){
 			continue
 		}
-		timers[i] = time.NewTimer(5 * time.Second)
+		resetTimer[i] = make(chan struct{}, 1)
+		go timoutNotifier(i,timeout,resetTimer[i])
 	}
 
 	for{
-	select{
-		case netMessage := <- receiveMessage:
-			//Handle neterror
-			if(NetError[netMessage.ID]){
-				timers[netMessage.ID].Reset(1 * time.Second)
+		select{
+			case netMessage := <- receiveMessage:
+				//Handle neterror
+				if(NetError[netMessage.ID]){
+					ReceivedPerSec[netMessage.ID]++
+					if(ReceivedPerSec[netMessage.ID] < 10){
+						continue
+					} else{
+						NetError[netMessage.ID] = false
+						netErrorToState <-  NetErrorNotification{ID: netMessage.ID, NetError: false}
+					}
+				}
+				resetTimer[netMessage.ID] <- struct{}{} //concider making non-blocking...
 
-			}
-			timers[netMessage.ID].Reset(5 * time.Second)
+				//Avoid bothering state with duplicate messages
+				if(netMessage == prevNetMessage){
+					continue
+				}
 
-			//Avoid bothering state with duplicate messages
-			if(netMessage == prevNetMessage){
-				continue
-			}
+				netMessageToState <- netMessage;
+				prevNetMessage = netMessage
 
-			netMessageToState <- netMessage;
-			prevNetMessage = netMessage
-		case 
-		
+			case id := <- timeout:
+				if(!NetError[id]){
+					NetError[id] = true;
+					netErrorToState <-  NetErrorNotification{ID: id, NetError: true}
+					ReceivedPerSec[id] = 0;
+					resetTimer[id] <- struct{}{}
+				} else{
+					ReceivedPerSec[id] = 0;
+					resetTimer[id] <- struct{}{}
+				}
+		}
 	}
+}
+
+func timoutNotifier(id int,timeout chan int,resetTimer chan struct{}){
+	timer := time.NewTimer(1 * time.Second)
+	for{
+		select {
+			case <-timer.C:
+				timeout <- id
+			case <-resetTimer:
+				if !timer.Stop() {
+					// Timer already fired, drain the channel to avoid spurious tick
+					//Check documention if this is still needed! https://pkg.go.dev/time#NewTimer
+					select {
+					case <-timer.C:
+					default:
+				}
+			}
+			timer.Reset(1 * time.Second) // safe now
+		}
 	}
 }
 
