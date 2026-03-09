@@ -11,6 +11,7 @@ const NumElevators int = 3
 const BroadcastRate float64 = 0.02 //Send every x seconds
 const NetErrorTimerLength float64 = 1 //Need 0 messages within NetErrorTimerLength to mark as netError
 const MessagesNeededWithinInterval int = 10 //Need MessagesNeededWithinInterval messages within NetErrorTimerLength to get peer back online
+//muligens endre til motta så så mange meldinger per sekund, så så mange sekunder etter hverandre
 
 var elevatorID int
 func ConstantsInit() {
