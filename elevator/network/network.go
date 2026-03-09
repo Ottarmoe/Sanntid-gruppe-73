@@ -13,8 +13,7 @@ import (
 )
 
 func NetworkSender(netMessageToNetworkSender <-chan NetMessage){
-	timeToSend := make(chan struct{})
-	go sendRateTimer(timeToSend)
+	timeToSend := time.NewTicker(1 * time.Second)
 	
 	netMessage := <- netMessageToNetworkSender;
 
@@ -22,7 +21,7 @@ func NetworkSender(netMessageToNetworkSender <-chan NetMessage){
 		select {
 		case netMessage = <- netMessageToNetworkSender:
 			
-		case <- timeToSend:	
+		case <- timeToSend.C:	
 			    data, err := json.Marshal(netMessage)
 				if err != nil {
 					log.Println("send jsonmarshal error:", err)
@@ -37,37 +36,62 @@ func NetworkSender(netMessageToNetworkSender <-chan NetMessage){
 
 func NetworkReceiver(netMessageToState chan<- NetMessage){
 	var prevNetMessage NetMessage
-	
+
+	receiveMessage := make(chan NetMessage)
+	go receiver(receiveMessage)
+
+	var NetError [NumElevators]bool
+	for i := range NumElevators {
+    NetError[i] = true
+	}
+	var timers [NumElevators]*time.Timer
+	for i := 0; i < NumElevators; i++ {
+		if(i == ID()){
+			continue
+		}
+		timers[i] = time.NewTimer(5 * time.Second)
+	}
+
+	for{
+	select{
+		case netMessage := <- receiveMessage:
+			//Handle neterror
+			if(NetError[netMessage.ID]){
+				timers[netMessage.ID].Reset(1 * time.Second)
+
+			}
+			timers[netMessage.ID].Reset(5 * time.Second)
+
+			//Avoid bothering state with duplicate messages
+			if(netMessage == prevNetMessage){
+				continue
+			}
+
+			netMessageToState <- netMessage;
+			prevNetMessage = netMessage
+		case 
+		
+	}
+	}
+}
+
+func receiver(receiveMessage chan<- NetMessage) {
 	for{
 		data, err := networkLow.Receive()
 		if err != nil {
 			log.Println("receive  error:", err) 
 			continue
 		}
-
 		var netMessage NetMessage
 		err = json.Unmarshal(data, &netMessage)
 		if err != nil {
 			log.Println("receive json unmarshal error:", err) 
 			continue
 		}
-		
 		if(netMessage.ID == ID()){
 			continue
 		}
-
-		if(netMessage == prevNetMessage){
-			continue
-		}
-
-		netMessageToState <- netMessage;
-		prevNetMessage = netMessage
+		receiveMessage <- netMessage
 	}
-}
 
-func sendRateTimer(timeToSend chan<- struct{}) {
-	for {
-		time.Sleep(time.Second)
-		timeToSend <- struct{}{}
-	}
 }
