@@ -7,6 +7,7 @@ import (
 	. "elevator/stateTypes"
 	. "elevio"
 	"fmt"
+	"time"
 )
 
 func PrintSomething() {
@@ -41,6 +42,8 @@ func StateKeeper(
 	// var lastOrdersWithConsensus OrdersWithConsesus
 	// var lastPhysics PhysicalState
 
+	// last := time.Now() //For debugging
+
 	for {
 		// PrintElevState(*me)
 		// sendToController := true
@@ -56,10 +59,14 @@ func StateKeeper(
 			fmt.Print("mech error %b\n", mechEvent)
 			handleMech(&wView, mechEvent)
 		case netMessage := <-netMessageToState:
-			_ = netMessage
+			handleNetworkOrders(&wView, netMessage)
+			handleNetworkPhysics(&wView, netMessage)
 		case netErrorNotification := <-netErrorToState: //burde dette caset og det over synkroniseres?
 			wView.NetError[netErrorNotification.ID] = netErrorNotification.NetError
-			fmt.Println("NetError:", wView.NetError)
+			// fmt.Println("NetError:", wView.NetError)
+			// now := time.Now()
+			// fmt.Println("Time passed:",now.Sub(last))
+			// last = now
 		// case _ = <-referenceRequest:
 		// 	fmt.Print("reference requested\n")
 		// 	var physics [NumElevators]PhysicalState

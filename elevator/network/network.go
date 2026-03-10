@@ -5,11 +5,10 @@ import (
 	. "elevator/stateTypes"
 	"time"
 
-	// "elevator/elevatorConstants"
 	. "elevator/elevatorConstants"
 	"encoding/json"
 	"log"
-	// "fmt"
+	"fmt"
 )
 
 func NetworkSender(netMessageToNetworkSender <-chan NetMessage){
@@ -42,9 +41,11 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 
 	var NetError [NumElevators]bool
 	var ReceivedDuringInterval [NumElevators]int
+	var ReceivedIntervals [NumElevators]int
 	for i := 0; i < NumElevators; i++ {
     	NetError[i] = true
 		ReceivedDuringInterval[i] = 0
+		ReceivedIntervals[i] = 0
 	}
 	timeout := make(chan int)
 	var resetTimer [NumElevators]chan struct{}
@@ -65,8 +66,14 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 					if(ReceivedDuringInterval[netMessage.ID] < MessagesNeededWithinInterval){
 						continue
 					} else{
-						NetError[netMessage.ID] = false
-						netErrorToState <-  NetErrorNotification{ID: netMessage.ID, NetError: false}
+						ReceivedIntervals[netMessage.ID]++
+						ReceivedDuringInterval[netMessage.ID] = 0
+						if(ReceivedIntervals[netMessage.ID] < IntervalsNeeded){
+							continue
+						} else{
+							NetError[netMessage.ID] = false
+							netErrorToState <-  NetErrorNotification{ID: netMessage.ID, NetError: false}
+						}
 					}
 				}
 				resetTimer[netMessage.ID] <- struct{}{} //concider making non-blocking...seems to work for now
@@ -84,9 +91,11 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 					NetError[id] = true;
 					netErrorToState <-  NetErrorNotification{ID: id, NetError: true}
 					ReceivedDuringInterval[id] = 0;
+					ReceivedIntervals[id] = 0
 					resetTimer[id] <- struct{}{}
 				} else{
 					ReceivedDuringInterval[id] = 0;
+					ReceivedIntervals[id] = 0
 					resetTimer[id] <- struct{}{}
 				}
 		}
@@ -132,7 +141,7 @@ func receiver(receiveMessage chan<- NetMessage) {
 			continue
 		}
 
-		//For debugging
+		// For debugging
 		// now := time.Now()
     	// fmt.Println(now.Sub(last))
     	// last = now

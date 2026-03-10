@@ -78,3 +78,27 @@ func findConsensus(wv ElevWorldView) OrdersWithConsesus {
 	}
 	return ordersWithConsesus
 }
+
+func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
+	wv.ElevStates[netMessage.ID].OrderState.CabOrders = netMessage.ElevState.OrderState.CabOrders
+	wv.ElevStates[netMessage.ID].OrderState.HallOrders = netMessage.ElevState.OrderState.HallOrders
+
+	for floor := 0; floor < NumFloors; floor++ {
+		if netMessage.CabBackups[ID()][floor] == wv.ElevStates[ID()].OrderState.CabOrders[floor] {
+			wv.CabAgreement[netMessage.ID][floor] = true
+		} else{
+			wv.CabAgreement[netMessage.ID][floor] = false
+		}
+	}
+
+	if(!wv.CabArchiveSeen[netMessage.ID]){
+		for floor := 0; floor < NumFloors; floor++ {
+			if(wv.ElevStates[ID()].OrderState.CabOrders[floor] == CabNO){
+				if(netMessage.CabBackups[ID()][floor] == CabO){
+					wv.ElevStates[ID()].OrderState.CabOrders[floor] = CabO
+				}
+			}
+		}
+		wv.CabArchiveSeen[netMessage.ID] = true
+	}
+}
