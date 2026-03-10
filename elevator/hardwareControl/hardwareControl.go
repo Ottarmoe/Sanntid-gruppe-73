@@ -14,11 +14,12 @@ func HardWareControl(physicsToHardware <-chan PhysicalState, ordersWithConsesusT
 
 			if physicalState.Behaviour == Idle {
 				SetMotorDirection(0)
-				// SetDoorOpenLamp(false)
+				SetDoorOpenLamp(false)
 			}
 
 			if physicalState.Behaviour == Moving {
-				// SetDoorOpenLamp(false)
+				SetDoorOpenLamp(false)
+				//fmt.Println("moving", physicalState.MovDirection)
 				if physicalState.MovDirection == Up {
 					SetMotorDirection(1)
 				}

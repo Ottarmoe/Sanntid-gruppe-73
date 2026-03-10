@@ -2,9 +2,9 @@ package state
 
 import (
 	. "elevator/elevatorConstants"
-	. "elevio"
 	. "elevator/stateTypes"
-	// "fmt"
+	. "elevio"
+	"fmt"
 )
 
 func handleButton(vw *ElevWorldView, event ButtonEvent) {
@@ -77,4 +77,49 @@ func findConsensus(wv ElevWorldView) OrdersWithConsesus {
 		}
 	}
 	return ordersWithConsesus
+}
+
+func handleOrderDynamics(wv *ElevWorldView) {
+	elevator := &wv.ElevStates[wv.ID]
+	physics := &elevator.PhysicalState
+
+	//transition to OPR
+	if physics.Behaviour == DoorOpen {
+		elevator.OrderState.CabOrders[physics.Floor] = CabNO
+		//is everyone in Order?
+		readyToTransition := true
+		for elev := 0; elev < NumElevators; elev++ {
+			if !wv.NetError[elev] || elev == ID() {
+				readyToTransition = readyToTransition && wv.ElevStates[elev].OrderState.HallOrders[physics.Floor][physics.MovDirection] == HallO
+			}
+		}
+		if readyToTransition {
+			elevator.OrderState.HallOrders[physics.Floor][physics.MovDirection] = HallOPR
+			fmt.Println("pending removal")
+		}
+	}
+
+	//transition to NO
+	for floor := 0; floor < NumFloors; floor++ {
+		//Up
+		readyToTransition := true
+		for elev := 0; elev < NumElevators; elev++ {
+			if !wv.NetError[elev] || elev == ID() {
+				readyToTransition = readyToTransition && wv.ElevStates[elev].OrderState.HallOrders[physics.Floor][Up] == HallOPR
+			}
+		}
+		if readyToTransition {
+			elevator.OrderState.HallOrders[physics.Floor][Up] = HallNO
+		}
+		//Down
+		readyToTransition = true
+		for elev := 0; elev < NumElevators; elev++ {
+			if !wv.NetError[elev] || elev == ID() {
+				readyToTransition = readyToTransition && wv.ElevStates[elev].OrderState.HallOrders[physics.Floor][Down] == HallOPR
+			}
+		}
+		if readyToTransition {
+			elevator.OrderState.HallOrders[physics.Floor][Down] = HallNO
+		}
+	}
 }

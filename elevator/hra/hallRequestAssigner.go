@@ -28,6 +28,15 @@ func HRA(
 	physics [NumElevators]PhysicalState,
 	NetError [3]bool,
 ) OurOrders {
+	//sanitize input
+	/*for elev := 0; elev < NumElevators; elev++ {
+		if physics[elev].Floor == 0 {
+			physics[elev].MovDirection = Up
+		}
+		if physics[elev].Floor == NumFloors-1 {
+			physics[elev].MovDirection = Down
+		}
+	}*/
 
 	hraExecutable := "hra/hall_request_assigner"
 	id := orders.ID
@@ -57,7 +66,7 @@ func HRA(
 	if err != nil {
 		fmt.Println("json.Marshal error: ", err)
 	}
-
+	//fmt.Println(string(jsonBytes))
 	ret, err := exec.Command(hraExecutable, "-i", string(jsonBytes)).CombinedOutput()
 	if err != nil {
 		fmt.Println("exec.Command error: ", err)
