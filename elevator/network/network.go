@@ -8,7 +8,7 @@ import (
 	. "elevator/elevatorConstants"
 	"encoding/json"
 	"log"
-	"fmt"
+	// "fmt"
 )
 
 func NetworkSender(netMessageToNetworkSender <-chan NetMessage){

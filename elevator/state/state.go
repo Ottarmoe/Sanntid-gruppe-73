@@ -7,7 +7,7 @@ import (
 	. "elevator/stateTypes"
 	. "elevio"
 	"fmt"
-	"time"
+	// "time"
 )
 
 func PrintSomething() {
