@@ -145,7 +145,7 @@ func orderInDirection(currentfloor int, direction Direction, orders OurOrders) b
 	cabOrders := orders.CabOrders
 	increment := directionToIncrement(direction)
 
-	for floor := currentfloor; floor < NumFloors && floor >= 0; floor += increment {
+	for floor := currentfloor + increment; floor < NumFloors && floor >= 0; floor += increment {
 		if hallOrders[floor][Up] || hallOrders[floor][Down] || cabOrders[floor] {
 			return true
 		}
