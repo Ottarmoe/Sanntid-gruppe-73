@@ -4,7 +4,7 @@ import (
 	. "elevator/elevatorConstants"
 	. "elevator/stateTypes"
 	. "elevio"
-	"fmt"
+	// "fmt"
 )
 
 func handleButton(vw *ElevWorldView, event ButtonEvent) {
@@ -118,7 +118,7 @@ func handleOrderDynamics(wv *ElevWorldView) {
 		}
 		if readyToTransition {
 			elevator.OrderState.HallOrders[physics.Floor][physics.MovDirection] = HallOPR
-			fmt.Println("pending removal")
+			// fmt.Println("pending removal")
 		}
 	}
 

@@ -34,7 +34,7 @@ func NetworkSender(netMessageToNetworkSender <-chan NetMessage){
 }
 
 func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<- NetErrorNotification){
-	var prevNetMessage NetMessage
+	var prevNetMessages[NumElevators] NetMessage
 
 	receiveMessage := make(chan NetMessage)
 	go receiver(receiveMessage)
@@ -79,12 +79,12 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 				resetTimer[netMessage.ID] <- struct{}{} //concider making non-blocking...seems to work for now
 
 				//Avoid bothering state with duplicate messages
-				if(netMessage == prevNetMessage){
+				if(netMessage == prevNetMessages[netMessage.ID]){
 					continue
 				}
 
 				netMessageToState <- netMessage;
-				prevNetMessage = netMessage
+				prevNetMessages[netMessage.ID] = netMessage
 
 			case id := <- timeout:
 				if(!NetError[id]){

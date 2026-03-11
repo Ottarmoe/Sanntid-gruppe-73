@@ -4,7 +4,7 @@ import (
 	//. "elevator/elevatorConstants"
 	//. "elevator/state"
 	. "elevator/stateTypes"
-	"fmt"
+	// "fmt"
 	"math"
 	"time"
 )
@@ -66,7 +66,7 @@ func Controller(
 			physicalStateUpdate <- actualState
 		}
 		if actualState == ref {
-			fmt.Println("i have reached my goal")
+			// fmt.Println("i have reached my goal")
 			referenceRequest <- struct{}{}
 			if actualState.Behaviour == Idle {
 				goIdle <- struct{}{}
@@ -78,10 +78,10 @@ func Controller(
 		case newActual := <-actualStates:
 			newActual.MechError = false //controller always tries to move as if it is fully functional
 			actualState.Floor = newActual.Floor
-			fmt.Print("S ")
-			PrintPhysicalState(actualState)
-			fmt.Print("r ")
-			PrintPhysicalState(ref)
+			// fmt.Print("S ")
+			// PrintPhysicalState(actualState)
+			// fmt.Print("r ")
+			// PrintPhysicalState(ref)
 		case _ = <-doorClosed:
 			actualState.Behaviour = Idle
 		case ref = <-references:
@@ -95,7 +95,7 @@ func Controller(
 				}
 				expectedTime += 2
 				newDeadLine <- expectedTime
-				fmt.Print("R ")
+				// fmt.Print("R ")
 				PrintPhysicalState(ref)
 			}
 		}
