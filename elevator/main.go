@@ -27,7 +27,7 @@ func main() {
 	int_mot := make(chan PhysicalState, 10)
 	int_mech := make(chan bool)
 
-	ref_request := make(chan struct{})
+	ref_request := make(chan struct{}, 20)
 	ref_to_controller := make(chan PhysicalState)
 	stat_to_controller := make(chan PhysicalState, 10)
 
@@ -47,12 +47,12 @@ func main() {
 		sense_buttons, sense_floor, int_mot, int_mech,
 		ordersWithConsesusToHardware, physicsToHardware,
 		stat_to_controller, ref_request, ref_to_controller,
-		netMessageToNetworkSender,netMessageToState, netErrorToState)
+		netMessageToNetworkSender, netMessageToState, netErrorToState)
 	go HardWareControl(physicsToHardware, ordersWithConsesusToHardware)
 	go logicalController.Controller(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
 	go NetworkSender(netMessageToNetworkSender)
 	go NetworkReceiver(netMessageToState, netErrorToState)
-	
+
 	// go referenceGenerator.ReferenceGenerator(stat_Gen)
 
 	select {}

@@ -2,6 +2,7 @@ package stateTypes
 
 import (
 	. "elevator/elevatorConstants"
+	"fmt"
 )
 
 // Types
@@ -44,6 +45,18 @@ type PhysicalState struct {
 	MechError    bool
 }
 
+func PrintPhysicalState(stat PhysicalState) {
+	switch stat.Behaviour {
+	case Idle:
+		fmt.Print("Idle")
+	case Moving:
+		fmt.Print("Moving ", []string{"Up", "Down"}[stat.MovDirection])
+	case DoorOpen:
+		fmt.Print("DoorOpen")
+	}
+	fmt.Println(" on floor", stat.Floor)
+}
+
 type OrderState struct {
 	HallOrders [NumFloors][2]hallOrderState //0 is down, 1 is up, use "direction"
 	CabOrders  [NumFloors]CabOrderState
@@ -62,16 +75,16 @@ type ElevWorldView struct {
 	NetError       [NumElevators]bool
 }
 
-//Network 
+// Network
 type NetMessage struct {
-	ID			int
-	ElevState 	ElevState
-	CabBackups 	[NumElevators][NumFloors]CabOrderState //not needed by other elevators most of the time
+	ID         int
+	ElevState  ElevState
+	CabBackups [NumElevators][NumFloors]CabOrderState //not needed by other elevators most of the time
 }
 
-type NetErrorNotification struct { 
-	ID			int
-	NetError 	bool
+type NetErrorNotification struct {
+	ID       int
+	NetError bool
 }
 
 // Consesus struct

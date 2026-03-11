@@ -5,18 +5,16 @@ import (
 	. "elevator/elevatorConstants"
 )
 
-func handleFloor(physicalState *PhysicalState, event int) {	
+func handleFloor(physicalState *PhysicalState, event int) {
 	physicalState.Floor = event
 }
 
 func handleMotor(wv *ElevWorldView, event PhysicalState) {
-	elevator := &wv.ElevStates[wv.ID]	
+	elevator := &wv.ElevStates[wv.ID]
 	physics := &elevator.PhysicalState
 
 	physics.Behaviour = event.Behaviour
-	if event.Behaviour == Moving {
-		physics.MovDirection = event.MovDirection
-	}
+	physics.MovDirection = event.MovDirection
 }
 
 func handleMech(wv *ElevWorldView, event bool) {

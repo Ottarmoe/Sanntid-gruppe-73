@@ -4,6 +4,7 @@ import (
 	//. "elevator/elevatorConstants"
 	//. "elevator/state"
 	. "elevator/stateTypes"
+	"fmt"
 	"math"
 	"time"
 )
@@ -16,69 +17,87 @@ func Controller(
 	physicalStateUpdate chan<- PhysicalState,
 	mechError chan<- bool,
 ) {
-
+	goIdle := make(chan struct{})
 	newDeadLine := make(chan float64)
-	go inspector(newDeadLine, mechError)
+	go inspector(newDeadLine, goIdle, mechError)
 	doorClosed := make(chan struct{})
 	doorOpenFor := make(chan float64)
 	go doors(doorOpenFor, doorClosed, obstruction)
 
 	actualState := <-actualStates
 	ref := actualState
+	initialState := actualState
 
-	stateChanged := false
 	for {
 		//react and control
 
 		//if we have reached the right floor, but not yet entered the right state
-		if actualState.Floor == ref.Floor && actualState.Behaviour != ref.Behaviour {
-			if ref.Behaviour == DoorOpen {
-				doorOpenFor <- 3.
-				actualState.Behaviour = DoorOpen
-				stateChanged = true
-			} else if ref.Behaviour == Idle && actualState.Behaviour != DoorOpen {
-				actualState.Behaviour = Idle
-				stateChanged = true
-			} else if ref.Behaviour == Moving && actualState.Behaviour != DoorOpen {
-				actualState.Behaviour = Moving
-				stateChanged = true
+		if actualState.Floor == ref.Floor {
+			actualState.MovDirection = ref.MovDirection
+			if actualState.Behaviour != ref.Behaviour {
+				if ref.Behaviour == DoorOpen {
+					doorOpenFor <- 3.
+					actualState.Behaviour = DoorOpen
+				} else if ref.Behaviour == Idle && actualState.Behaviour != DoorOpen {
+					actualState.Behaviour = Idle
+				} else if ref.Behaviour == Moving && actualState.Behaviour != DoorOpen {
+					actualState.Behaviour = Moving
+				}
 			}
 		}
-		if ref.MovDirection != actualState.MovDirection {
-			ref.MovDirection = actualState.MovDirection
-			stateChanged = true
-		}
+		//fmt.Println("i am at", actualState.Floor, "i should be at", ref.Floor)
 		if ref.Floor != actualState.Floor {
+			if ref.Floor < actualState.Floor {
+				actualState.MovDirection = Down
+				//fmt.Println("i should move down")
+			}
+			if ref.Floor > actualState.Floor {
+				actualState.MovDirection = Up
+				//fmt.Println("i should move up")
+			}
 			if actualState.Behaviour != Moving {
-				stateChanged = true
 			}
 			actualState.Behaviour = Moving
 
 		}
-		if stateChanged {
+		if initialState != actualState {
+			//fmt.Print("sending new state")
+			//PrintPhysicalState(actualState)
 			physicalStateUpdate <- actualState
 		}
-		stateChanged = false
 		if actualState == ref {
+			fmt.Println("i have reached my goal")
 			referenceRequest <- struct{}{}
+			if actualState.Behaviour == Idle {
+				goIdle <- struct{}{}
+			}
 		}
 		//wait for any change in state, or the arrival of a new reference
+		initialState = actualState
 		select {
 		case newActual := <-actualStates:
 			newActual.MechError = false //controller always tries to move as if it is fully functional
-			actualState = newActual
+			actualState.Floor = newActual.Floor
+			fmt.Print("S ")
+			PrintPhysicalState(actualState)
+			fmt.Print("r ")
+			PrintPhysicalState(ref)
 		case _ = <-doorClosed:
 			actualState.Behaviour = Idle
-			stateChanged = true
-
 		case ref = <-references:
-			expectedTime := 0.
-			expectedTime += math.Abs(float64(ref.Floor-actualState.Floor)) * 7.
-			if actualState.Behaviour == DoorOpen {
-				expectedTime += 4.
+			ref.MechError = false
+			//fmt.Println("is reference", ref, "not the same as actual", actualState)
+			if ref != actualState {
+				expectedTime := 0.
+				expectedTime += math.Abs(float64(ref.Floor-actualState.Floor)) * 7.
+				if actualState.Behaviour == DoorOpen {
+					expectedTime += 4.
+				}
+				expectedTime += 2
+				newDeadLine <- expectedTime
+				fmt.Print("R ")
+				PrintPhysicalState(ref)
 			}
-			expectedTime += 2
-			newDeadLine <- expectedTime
 		}
 	}
 
@@ -113,9 +132,10 @@ func doors(HoldOpenFor <-chan float64, doorsClosed chan<- struct{}, obstruction 
 	}
 }
 
-func inspector(ExpectedTimeToNextGoal <-chan float64, mechErrorSignal chan<- bool) {
+func inspector(ExpectedTimeToNextGoal <-chan float64, goIdle <-chan struct{}, mechErrorSignal chan<- bool) {
 	numTimers := 0
 	burnoutReturn := make(chan struct{})
+	idle := true
 
 	for {
 		select {
@@ -125,11 +145,17 @@ func inspector(ExpectedTimeToNextGoal <-chan float64, mechErrorSignal chan<- boo
 				mechErrorSignal <- false
 			}
 			numTimers++
+			idle = false
+			//fmt.Println("no longer idle")
 		case _ = <-burnoutReturn:
 			numTimers--
-			if numTimers == 0 {
+			if numTimers == 0 && !idle {
 				mechErrorSignal <- true
 			}
+
+		case _ = <-goIdle:
+			//fmt.Println("gone idle")
+			idle = true
 		}
 	}
 }
