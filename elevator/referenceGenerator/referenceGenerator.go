@@ -1,16 +1,10 @@
 package referenceGenerator
-
 import (
-	//. "elevator/hra"
 	. "elevator/elevatorConstants"
 	. "elevator/stateTypes"
 )
 
 func ReferenceGenerator(myPhysicalState PhysicalState, myOrders OurOrders) PhysicalState {
-	//TO DO: change hallorders to the assigned hall orders, not the ones from the worldview.
-	// The hall orders from the worldview are the ones that have not been assigned to an elevator yet,
-	//  but the reference generator should use the assigned hall orders, which are in the orderstate of the elevstate.
-	//...is this still relevant?
 	CurrentFloor := myPhysicalState.Floor
 	CurrentDirection := myPhysicalState.MovDirection
 
@@ -18,61 +12,49 @@ func ReferenceGenerator(myPhysicalState PhysicalState, myOrders OurOrders) Physi
 
 	case Idle:
 
-		anyOrdersOnFloorInSameDirection := orderOnCurrentFloorInSameDirection(myPhysicalState, myOrders)
-		if anyOrdersOnFloorInSameDirection {
+		if orderOnCurrentFloorInSameDirection(myPhysicalState, myOrders) {
 
 			referencePhysicalState := setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor)
 			return referencePhysicalState
 		}
 
-		anyOrdersInSameDirection := orderInSameDirection(myPhysicalState, myOrders)
-		if anyOrdersInSameDirection {
+		if orderInSameDirection(myPhysicalState, myOrders) {
 
 			referencePhysicalState := setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor)
 			return referencePhysicalState
 		}
 
-		anyOrdersOnFloorInOppositeDirection := orderOnCurrentFloorInOppositeDirection(myPhysicalState, myOrders)
-		if anyOrdersOnFloorInOppositeDirection {
+		if orderOnCurrentFloorInOppositeDirection(myPhysicalState, myOrders) {
 
 			referencePhysicalState := setReferencePhysicalState(DoorOpen, oppositeDirection(CurrentDirection), CurrentFloor)
 			return referencePhysicalState
 		}
 
-		anyOrdersInOppositeDirection := orderInOppositeDirection(myPhysicalState, myOrders)
-		if anyOrdersInOppositeDirection {
+		if orderInOppositeDirection(myPhysicalState, myOrders) {
 
 			referencePhysicalState := setReferencePhysicalState(Moving, oppositeDirection(CurrentDirection), CurrentFloor)
 			return referencePhysicalState
 
 		} else {
 
-			referencePhysicalState := setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor)
-			return referencePhysicalState
+			return setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor)
 		}
 
 	case Moving:
 
-		anyOrdersOnFloorInSameDirection := orderOnCurrentFloorInSameDirection(myPhysicalState, myOrders)
-		if anyOrdersOnFloorInSameDirection {
-
-			referencePhysicalState := setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor)
-			return referencePhysicalState
+		if  orderOnCurrentFloorInSameDirection(myPhysicalState, myOrders) {
+			return setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor)
 		}
 
-		shouldIStop := ShouldIStopOnNextFloor(myPhysicalState, myOrders)
-		if shouldIStop {
-			referencePhysicalState := setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
-			return referencePhysicalState
+		if shouldIStopOnNextFloor(myPhysicalState, myOrders) {
+			return setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
 
 		} else {
-			referencePhysicalState := setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
-			return referencePhysicalState
+			return setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
 		}
 
 	case DoorOpen:
-		referencePhysicalState := setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor)
-		return referencePhysicalState
+		return setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor)
 	}
 
 	return myPhysicalState
@@ -82,6 +64,15 @@ func setReferencePhysicalState(behavior MotorBehaviour, direction Direction, flo
 	var referencePhysicalState PhysicalState
 	referencePhysicalState.Behaviour = behavior
 	//a reference physical state cannot tell the elevator to move out of the shaft
+
+	if floor < 0 {
+		floor = 0
+	} else if floor >= NumFloors {
+		floor = NumFloors - 1
+	}
+
+	referencePhysicalState.Floor = floor
+
 	if floor == 0 {
 		referencePhysicalState.MovDirection = Up
 	} else if floor == NumFloors-1 {
@@ -89,7 +80,6 @@ func setReferencePhysicalState(behavior MotorBehaviour, direction Direction, flo
 	} else {
 		referencePhysicalState.MovDirection = direction
 	}
-	referencePhysicalState.Floor = floor
 	referencePhysicalState.MechError = false
 
 	return referencePhysicalState
@@ -98,21 +88,17 @@ func setReferencePhysicalState(behavior MotorBehaviour, direction Direction, flo
 func directionToIncrement(direction Direction) int {
 	if direction == Up {
 		return 1
-	}
-	if direction == Down {
+	} else {
 		return -1
 	}
-	return 0
 }
 
 func oppositeDirection(direction Direction) Direction {
 	if direction == Up {
 		return Down
-	}
-	if direction == Down {
+	} else {
 		return Up
 	}
-	return 0
 }
 
 func orderOnCurrentFloorInSameDirection(me PhysicalState, orders OurOrders) bool {
@@ -121,10 +107,7 @@ func orderOnCurrentFloorInSameDirection(me PhysicalState, orders OurOrders) bool
 	cabOrders := orders.CabOrders
 	direction := me.MovDirection
 
-	if (hallOrders[floor][direction]) || cabOrders[floor] {
-		return true
-	}
-	return false
+	return hallOrders[floor][direction] || cabOrders[floor]
 }
 
 func orderOnCurrentFloorInOppositeDirection(me PhysicalState, orders OurOrders) bool {
@@ -132,10 +115,7 @@ func orderOnCurrentFloorInOppositeDirection(me PhysicalState, orders OurOrders) 
 	hallOrders := orders.HallOrders
 	direction := oppositeDirection(me.MovDirection)
 
-	if hallOrders[floor][direction] {
-		return true
-	}
-	return false
+	return hallOrders[floor][direction]
 }
 
 func orderInSameDirection(me PhysicalState, orders OurOrders) bool {
@@ -147,7 +127,6 @@ func orderInOppositeDirection(me PhysicalState, orders OurOrders) bool {
 }
 
 func orderInDirection(currentfloor int, direction Direction, orders OurOrders) bool {
-	//return directionalOrderInDirection(me.MovDirection, me.MovDirection, me.Floor, orders)
 	hallOrders := orders.HallOrders
 	cabOrders := orders.CabOrders
 	increment := directionToIncrement(direction)
@@ -160,7 +139,7 @@ func orderInDirection(currentfloor int, direction Direction, orders OurOrders) b
 	return false
 }
 
-func ShouldIStopOnNextFloor(me PhysicalState, orders OurOrders) bool {
+func shouldIStopOnNextFloor(me PhysicalState, orders OurOrders) bool {
 	direction := me.MovDirection
 	nextFloor := me.Floor + directionToIncrement(direction)
 

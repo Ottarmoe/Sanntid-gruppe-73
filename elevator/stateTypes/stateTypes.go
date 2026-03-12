@@ -58,7 +58,7 @@ func PrintPhysicalState(stat PhysicalState) {
 }
 
 type OrderState struct {
-	HallOrders [NumFloors][2]hallOrderState //0 is down, 1 is up, use "direction"
+	HallOrders [NumFloors][2]hallOrderState //0 is up, 1 is down, use "direction"
 	CabOrders  [NumFloors]CabOrderState
 }
 
@@ -90,11 +90,11 @@ type NetErrorNotification struct {
 // Consesus struct
 type OrdersWithConsesus struct {
 	ID         int
-	HallOrders [NumFloors][2]bool //0 is down, 1 is up, use "direction"
+	HallOrders [NumFloors][2]bool //0 is up, 1 is down, use "direction"
 	CabOrders  [NumElevators][NumFloors]bool
 }
 
 type OurOrders struct {
-	HallOrders [NumFloors][2]bool //0 is down, 1 is up, use "direction"
+	HallOrders [NumFloors][2]bool //0 is up, 1 is down, use "direction"
 	CabOrders  [NumFloors]bool
 }
