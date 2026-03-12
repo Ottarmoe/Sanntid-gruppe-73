@@ -13,42 +13,27 @@ func ReferenceGenerator(myPhysicalState PhysicalState, myOrders OurOrders) Physi
 	case Idle:
 
 		if orderOnCurrentFloorInSameDirection(myPhysicalState, myOrders) {
-
-			referencePhysicalState := setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor)
-			return referencePhysicalState
+			return setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor)
 		}
-
 		if orderInSameDirection(myPhysicalState, myOrders) {
-
-			referencePhysicalState := setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor)
-			return referencePhysicalState
+			return setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor)
 		}
-
 		if orderOnCurrentFloorInOppositeDirection(myPhysicalState, myOrders) {
-
-			referencePhysicalState := setReferencePhysicalState(DoorOpen, oppositeDirection(CurrentDirection), CurrentFloor)
-			return referencePhysicalState
+			return setReferencePhysicalState(DoorOpen, oppositeDirection(CurrentDirection), CurrentFloor)
 		}
-
 		if orderInOppositeDirection(myPhysicalState, myOrders) {
-
-			referencePhysicalState := setReferencePhysicalState(Moving, oppositeDirection(CurrentDirection), CurrentFloor)
-			return referencePhysicalState
-
+			return setReferencePhysicalState(Moving, oppositeDirection(CurrentDirection), CurrentFloor)
 		} else {
-
 			return setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor)
 		}
 
 	case Moving:
 
-		if  orderOnCurrentFloorInSameDirection(myPhysicalState, myOrders) {
+		if orderOnCurrentFloorInSameDirection(myPhysicalState, myOrders) {
 			return setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor)
 		}
-
 		if shouldIStopOnNextFloor(myPhysicalState, myOrders) {
 			return setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
-
 		} else {
 			return setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
 		}
@@ -61,59 +46,54 @@ func ReferenceGenerator(myPhysicalState PhysicalState, myOrders OurOrders) Physi
 }
 
 func setReferencePhysicalState(behavior MotorBehaviour, direction Direction, floor int) PhysicalState {
+
+	//adding safety measures to ensure that the reference physical state does not go out of bounds, which could cause panics in the tests
+	if floor <= 0 {
+		floor = 0
+		direction = Up
+	} else if floor >= NumFloors-1 {
+		floor = NumFloors - 1
+		direction = Down
+	}
+
 	var referencePhysicalState PhysicalState
 	referencePhysicalState.Behaviour = behavior
-	//a reference physical state cannot tell the elevator to move out of the shaft
-
-	if floor < 0 {
-		floor = 0
-	} else if floor >= NumFloors {
-		floor = NumFloors - 1
-	}
-
 	referencePhysicalState.Floor = floor
-
-	if floor == 0 {
-		referencePhysicalState.MovDirection = Up
-	} else if floor == NumFloors-1 {
-		referencePhysicalState.MovDirection = Down
-	} else {
-		referencePhysicalState.MovDirection = direction
-	}
+	referencePhysicalState.MovDirection = direction
 	referencePhysicalState.MechError = false
-
+	
 	return referencePhysicalState
 }
 
 func directionToIncrement(direction Direction) int {
 	if direction == Up {
 		return 1
-	} else {
-		return -1
-	}
+	} 
+	return -1
 }
+
 
 func oppositeDirection(direction Direction) Direction {
 	if direction == Up {
 		return Down
-	} else {
-		return Up
 	}
+	return Up
 }
+
 
 func orderOnCurrentFloorInSameDirection(me PhysicalState, orders OurOrders) bool {
 	floor := me.Floor
+	direction := me.MovDirection
 	hallOrders := orders.HallOrders
 	cabOrders := orders.CabOrders
-	direction := me.MovDirection
 
 	return hallOrders[floor][direction] || cabOrders[floor]
 }
 
 func orderOnCurrentFloorInOppositeDirection(me PhysicalState, orders OurOrders) bool {
 	floor := me.Floor
-	hallOrders := orders.HallOrders
 	direction := oppositeDirection(me.MovDirection)
+	hallOrders := orders.HallOrders
 
 	return hallOrders[floor][direction]
 }
@@ -157,9 +137,6 @@ func shouldIStopOnNextFloor(me PhysicalState, orders OurOrders) bool {
 		return true
 	}
 	// Stop for opposite-direction order only if there are no orders beyond next floor
-	if hallOrders[nextFloor][oppositeDirection(direction)] &&
-		!orderInDirection(nextFloor, me.MovDirection, orders) {
-		return true
-	}
-	return false
+	return hallOrders[nextFloor][oppositeDirection(direction)] &&
+		!orderInDirection(nextFloor, me.MovDirection, orders)
 }
