@@ -70,11 +70,13 @@ func StateKeeper(
 			fmt.Println("NetError:", wView.NetError)
 		case _ = <-referenceRequest:
 			var physics [NumElevators]PhysicalState
-			for elev := 0; elev < NumElevators; elev++ {
+			for
+			 elev := 0; elev < NumElevators; elev++ {
 				physics[elev] = wView.ElevStates[elev].PhysicalState
 			}
 			ordersWithConsesus := findConsensus(wView)
 			if ordersWithConsesus != lastOrdersWithConsensus || me.PhysicalState != lastPhysics {
+				//fmt.Println("called HRA")
 				relevantOrders := hra.HRA(ordersWithConsesus, physics, wView.NetError)
 				ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
 				_ = ref

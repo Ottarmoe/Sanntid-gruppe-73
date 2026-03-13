@@ -75,7 +75,7 @@ func HRA(
 
 	output := new(map[string][][2]bool)
 	err = json.Unmarshal(ret, &output)
-	fmt.Println(string(ret))
+	//fmt.Println(string(ret))
 	if err != nil {
 		fmt.Println("json.Unmarshal error: ", err)
 	}
