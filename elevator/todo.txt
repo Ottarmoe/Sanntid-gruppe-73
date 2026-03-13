@@ -1,0 +1,10 @@
+Watchdog timer/process pair
+state acceptence test
+edge cases on cab archiving (requires two unique messages in current configuration)
+find some way to test the hall order state mechine
+share 
+
+
+
+code quality, use gofmt
+get functions instead of extremely long encapsulations

@@ -19,7 +19,7 @@ var conn *net.UDPConn
 
 var broadcastAddr = &net.UDPAddr{
 	IP:   net.IPv4bcast, // 255.255.255.255
-	Port: 30099,
+	Port: 30073,
 }
 
 // Simulate packet loss
@@ -74,7 +74,7 @@ func Init() error {
 		},
 	}
 
-	pc, err := lc.ListenPacket(context.Background(), "udp", ":30000")
+	pc, err := lc.ListenPacket(context.Background(), "udp", fmt.Sprint(":", broadcastAddr.Port))
 	if err != nil {
 		return err
 	}

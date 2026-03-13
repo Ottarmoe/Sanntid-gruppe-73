@@ -6,11 +6,13 @@ import (
 	. "elevator/network"
 	"elevator/networkLow"
 
-	// "elevator/referenceGenerator"
+	//"elevator/referenceGenerator"
+
 	"elevator/logicalController"
 	"elevator/state"
 	. "elevator/stateTypes"
 	"elevio"
+	. "elevio"
 	"fmt"
 )
 
@@ -39,12 +41,14 @@ func main() {
 	ordersWithConsesusToHardware := make(chan OrdersWithConsesus)
 	physicsToHardware := make(chan PhysicalState)
 
+	startfloor := PhysicalInit()
+
 	go elevio.PollButtons(sense_buttons)
 	go elevio.PollFloorSensor(sense_floor)
 	go elevio.PollObstructionSwitch(sense_obstr)
 	go elevio.PollStopButton(sense_stop)
 
-	go state.StateKeeper(ID(), 0,
+	go state.StateKeeper(ID(), startfloor,
 		sense_buttons, sense_floor, int_mot, int_mech,
 		ordersWithConsesusToHardware, physicsToHardware,
 		stat_to_controller, ref_request, ref_to_controller,
@@ -54,7 +58,16 @@ func main() {
 	go NetworkSender(netMessageToNetworkSender)
 	go NetworkReceiver(netMessageToState, netErrorToState)
 
-	// go referenceGenerator.ReferenceGenerator(stat_Gen)
-
 	select {}
+}
+
+func PhysicalInit() int {
+	if GetFloor() != -1 {
+		return GetFloor()
+	}
+	SetMotorDirection(MD_Down)
+	for GetFloor() == -1 {}
+	
+	SetMotorDirection(MD_Stop)
+	return GetFloor()
 }

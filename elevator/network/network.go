@@ -3,11 +3,11 @@ package network
 import (
 	"elevator/networkLow"
 	. "elevator/stateTypes"
+	"fmt"
 	"time"
 
 	. "elevator/elevatorConstants"
 	"encoding/json"
-	"fmt"
 	"log"
 )
 
@@ -84,8 +84,8 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 				//fmt.Print("c")
 				continue
 			}
-			//fmt.Print("unique message")
-			//fmt.Println(netMessage)
+			fmt.Print("unique message")
+			fmt.Println(netMessage)
 
 			netMessageToState <- netMessage
 			prevNetMessages[netMessage.ID] = netMessage
@@ -137,7 +137,7 @@ func receiver(receiveMessage chan<- NetMessage) {
 		}
 		var netMessage NetMessage
 		err = json.Unmarshal(data, &netMessage)
-		fmt.Println("unmarshaled", netMessage)
+		//fmt.Println("unmarshaled", netMessage)
 		if err != nil {
 			log.Println("receive json unmarshal error:", err)
 			continue

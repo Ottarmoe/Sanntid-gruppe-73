@@ -126,8 +126,10 @@ func handleOrderDynamics(wv *ElevWorldView) {
 
 	//transition to OPR when finishing order
 	//and removal of cab order
-	if physics.Behaviour == DoorOpen {
+	if physics.Behaviour == DoorOpen && !elevator.PhysicalState.MechError {
+		//cab order
 		elevator.OrderState.CabOrders[physics.Floor] = CabNO
+		//hall order
 		//is everyone in Order or OPR?
 		readyToTransition := true
 		for elev := 0; elev < NumElevators; elev++ {
