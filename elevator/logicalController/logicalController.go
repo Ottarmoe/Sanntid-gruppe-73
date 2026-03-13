@@ -27,6 +27,7 @@ func Controller(
 	actualState := <-actualStates
 	ref := actualState
 	initialState := actualState
+	doReferenceRequest := true
 
 	for {
 		//react and control
@@ -65,7 +66,7 @@ func Controller(
 			//PrintPhysicalState(actualState)
 			physicalStateUpdate <- actualState
 		}
-		if actualState == ref {
+		if actualState == ref && doReferenceRequest {
 			// fmt.Println("i have reached my goal")
 			referenceRequest <- struct{}{}
 			if actualState.Behaviour == Idle {
@@ -74,6 +75,7 @@ func Controller(
 		}
 		//wait for any change in state, or the arrival of a new reference
 		initialState = actualState
+		doReferenceRequest = true
 		select {
 		case newActual := <-actualStates:
 			newActual.MechError = false //controller always tries to move as if it is fully functional
@@ -98,6 +100,7 @@ func Controller(
 				// fmt.Print("R ")
 				PrintPhysicalState(ref)
 			}
+			doReferenceRequest = false
 		}
 	}
 

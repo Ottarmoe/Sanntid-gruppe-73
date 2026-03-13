@@ -1,8 +1,8 @@
 package state
 
 import (
+	//. "elevator/elevatorConstants"
 	. "elevator/stateTypes"
-	. "elevator/elevatorConstants"
 )
 
 func handleFloor(physicalState *PhysicalState, event int) {
@@ -22,9 +22,5 @@ func handleMech(wv *ElevWorldView, event bool) {
 }
 
 func handleNetworkPhysics(wv *ElevWorldView, netMessage NetMessage) {
-	for elev := 0; elev < NumElevators; elev++ {
-		if elev != wv.ID {
-			wv.ElevStates[elev].PhysicalState = netMessage.ElevState.PhysicalState
-		}
-	}
+	wv.ElevStates[netMessage.ID].PhysicalState = netMessage.ElevState.PhysicalState
 }

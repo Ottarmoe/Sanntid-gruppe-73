@@ -7,6 +7,7 @@ import (
 )
 
 func HardWareControl(physicsToHardware <-chan PhysicalState, ordersWithConsesusToHardware <-chan OrdersWithConsesus) {
+	var prevConsensus OrdersWithConsesus
 	for {
 		select {
 		case physicalState := <-physicsToHardware:
@@ -34,10 +35,17 @@ func HardWareControl(physicsToHardware <-chan PhysicalState, ordersWithConsesusT
 
 		case ordersWithConsesus := <-ordersWithConsesusToHardware:
 			for floor := 0; floor < NumFloors; floor++ {
-				SetButtonLamp(BT_HallDown, floor, ordersWithConsesus.HallOrders[floor][Down])
-				SetButtonLamp(BT_HallUp, floor, ordersWithConsesus.HallOrders[floor][Up])
-				SetButtonLamp(BT_Cab, floor, ordersWithConsesus.CabOrders[ordersWithConsesus.ID][floor])
+				if ordersWithConsesus.HallOrders[floor][Down] != prevConsensus.HallOrders[floor][Down] {
+					SetButtonLamp(BT_HallDown, floor, ordersWithConsesus.HallOrders[floor][Down])
+				}
+				if ordersWithConsesus.HallOrders[floor][Up] != prevConsensus.HallOrders[floor][Up] {
+					SetButtonLamp(BT_HallDown, floor, ordersWithConsesus.HallOrders[floor][Up])
+				}
+				if ordersWithConsesus.CabOrders[ordersWithConsesus.ID][floor] != prevConsensus.CabOrders[ordersWithConsesus.ID][floor] {
+					SetButtonLamp(BT_Cab, floor, ordersWithConsesus.CabOrders[ordersWithConsesus.ID][floor])
+				}
 			}
+			prevConsensus = ordersWithConsesus
 		}
 	}
 }
