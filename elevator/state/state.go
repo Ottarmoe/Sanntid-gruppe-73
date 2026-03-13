@@ -50,6 +50,7 @@ func StateKeeper(
 		sendToController := true
 		select {
 		case buttonEvent := <-buttonClick:
+			//TODO: only transition to order when consensus on NO
 			handleButton(&wView, buttonEvent)
 		case floorEvent := <-floorReached:
 			//fmt.Print("floor update", floorEvent, "\n")

@@ -1,4 +1,5 @@
 package referenceGenerator
+
 import (
 	. "elevator/elevatorConstants"
 	. "elevator/stateTypes"
@@ -33,7 +34,7 @@ func ReferenceGenerator(myPhysicalState PhysicalState, myOrders OurOrders) Physi
 			return setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor)
 		}
 		if shouldIStopOnNextFloor(myPhysicalState, myOrders) {
-			return setReferencePhysicalState(DoorOpen, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
+			return setReferencePhysicalState(Idle, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
 		} else {
 			return setReferencePhysicalState(Moving, CurrentDirection, CurrentFloor+directionToIncrement(CurrentDirection))
 		}
@@ -61,17 +62,16 @@ func setReferencePhysicalState(behavior MotorBehaviour, direction Direction, flo
 	referencePhysicalState.Floor = floor
 	referencePhysicalState.MovDirection = direction
 	referencePhysicalState.MechError = false
-	
+
 	return referencePhysicalState
 }
 
 func directionToIncrement(direction Direction) int {
 	if direction == Up {
 		return 1
-	} 
+	}
 	return -1
 }
-
 
 func oppositeDirection(direction Direction) Direction {
 	if direction == Up {
@@ -79,7 +79,6 @@ func oppositeDirection(direction Direction) Direction {
 	}
 	return Up
 }
-
 
 func orderOnCurrentFloorInSameDirection(me PhysicalState, orders OurOrders) bool {
 	floor := me.Floor

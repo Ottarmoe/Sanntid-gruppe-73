@@ -6,10 +6,10 @@ import (
 )
 
 // Types
-type hallOrderState int
+type HallOrderState int
 
 const (
-	HallNO hallOrderState = iota
+	HallNO HallOrderState = iota
 	HallO
 	HallOPR
 )
@@ -58,7 +58,7 @@ func PrintPhysicalState(stat PhysicalState) {
 }
 
 type OrderState struct {
-	HallOrders [NumFloors][2]hallOrderState //0 is up, 1 is down, use "direction"
+	HallOrders [NumFloors][2]HallOrderState //0 is up, 1 is down, use "direction"
 	CabOrders  [NumFloors]CabOrderState
 }
 

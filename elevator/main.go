@@ -16,6 +16,7 @@ import (
 
 func main() {
 	ConstantsInit()
+
 	serverAdress := fmt.Sprintf("localhost:%d", 15657+ID())
 	elevio.Init(serverAdress, NumFloors)
 	networkLow.Init()

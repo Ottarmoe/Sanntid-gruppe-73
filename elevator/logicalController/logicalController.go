@@ -91,7 +91,7 @@ func Controller(
 				expectedTime := 0.
 				expectedTime += math.Abs(float64(ref.Floor-actualState.Floor)) * 7.
 				if actualState.Behaviour == DoorOpen {
-					expectedTime += 4.
+					expectedTime += 8. //adjust this to adjust sensitivity to obstruction
 				}
 				expectedTime += 2
 				newDeadLine <- expectedTime
