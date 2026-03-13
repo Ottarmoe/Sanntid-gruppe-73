@@ -1,32 +1,32 @@
 package networkLow
 
 import (
-	"fmt"
-	"net"
-	"syscall"
 	"context"
-	"golang.org/x/sys/unix"
-	"sync"
-	"math/rand"
+	. "elevator/elevatorConstants"
 	"errors"
+	"fmt"
+	"math/rand"
+	"net"
 	"net/http"
 	"strconv"
-	. "elevator/elevatorConstants"
+	"sync"
+	"syscall"
+
+	"golang.org/x/sys/unix"
 )
 
 var conn *net.UDPConn
 
 var broadcastAddr = &net.UDPAddr{
 	IP:   net.IPv4bcast, // 255.255.255.255
-	Port: 30000,
+	Port: 30099,
 }
 
-
-//Simulate packet loss 
-//curl "http://localhost:8080/set_loss?prob=0"
+// Simulate packet loss
+// curl "http://localhost:8080/set_loss?prob=0"
 var (
-	packetLossProb float64 = 0 // 0% initial packet loss
-	probMutex      sync.RWMutex   // protects access to packetLossProb
+	packetLossProb float64      = 0 // 0% initial packet loss
+	probMutex      sync.RWMutex     // protects access to packetLossProb
 )
 
 func getPacketLossProb() float64 {
@@ -123,28 +123,28 @@ func Send(data []byte) error {
 		return nil // drop packet
 	}
 
-    _, err := conn.WriteToUDP(data, broadcastAddr)
-    return err
+	_, err := conn.WriteToUDP(data, broadcastAddr)
+	return err
 }
 
-//returns slice of array with length mathcing the exact length of the message
+// returns slice of array with length mathcing the exact length of the message
 func Receive() ([]byte, error) {
-    buf := make([]byte, 1024)
+	buf := make([]byte, 1024)
 
-    n, _, err := conn.ReadFromUDP(buf)
-    if err != nil {
-        return nil, err
-    }
+	n, _, err := conn.ReadFromUDP(buf)
+	if err != nil {
+		return nil, err
+	}
 
 	//Simulate packet loss
 	if rand.Float64() < getPacketLossProb() {
 		return nil, ErrPacketDropped // drop packet
 	}
 
-    return buf[:n],nil
+	return buf[:n], nil
 }
 
-func PrintMessage(data []byte){
+func PrintMessage(data []byte) {
 	fmt.Printf("Received %s\n", string(data[:]))
 
 }

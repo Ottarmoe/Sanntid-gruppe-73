@@ -22,6 +22,7 @@ func NetworkSender(netMessageToNetworkSender <-chan NetMessage) {
 
 		case <-timeToSend.C:
 			data, err := json.Marshal(netMessage)
+			//fmt.Println(string(data))
 			if err != nil {
 				log.Println("send jsonmarshal error:", err)
 			}
@@ -83,8 +84,8 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 				//fmt.Print("c")
 				continue
 			}
-			fmt.Print("unique message")
-			fmt.Println(netMessage)
+			//fmt.Print("unique message")
+			//fmt.Println(netMessage)
 
 			netMessageToState <- netMessage
 			prevNetMessages[netMessage.ID] = netMessage
@@ -136,6 +137,7 @@ func receiver(receiveMessage chan<- NetMessage) {
 		}
 		var netMessage NetMessage
 		err = json.Unmarshal(data, &netMessage)
+		fmt.Println("unmarshaled", netMessage)
 		if err != nil {
 			log.Println("receive json unmarshal error:", err)
 			continue
@@ -143,6 +145,7 @@ func receiver(receiveMessage chan<- NetMessage) {
 		if netMessage.ID == ID() {
 			continue
 		}
+		//fmt.Println("recieved", netMessage)
 
 		// For debugging
 		// now := time.Now()

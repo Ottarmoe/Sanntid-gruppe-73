@@ -114,7 +114,7 @@ func initWorldView(id int, initfloor int) ElevWorldView {
 		for floor := 0; floor < NumFloors; floor++ {
 			wView.ElevStates[elev].OrderState.HallOrders[floor][Down] = HallNO
 			wView.ElevStates[elev].OrderState.HallOrders[floor][Up] = HallNO
-			wView.ElevStates[elev].OrderState.CabOrders[floor] = CabUO
+			wView.ElevStates[elev].OrderState.CabOrders[floor] = CabNO
 		}
 	}
 
