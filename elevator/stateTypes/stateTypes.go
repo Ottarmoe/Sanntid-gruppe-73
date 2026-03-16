@@ -45,18 +45,6 @@ type PhysicalState struct {
 	MechError    bool
 }
 
-func PrintPhysicalState(stat PhysicalState) {
-	switch stat.Behaviour {
-	case Idle:
-		fmt.Print("Idle ", []string{"Up", "Down"}[stat.MovDirection])
-	case Moving:
-		fmt.Print("Moving ", []string{"Up", "Down"}[stat.MovDirection])
-	case DoorOpen:
-		fmt.Print("DoorOpen ", []string{"Up", "Down"}[stat.MovDirection])
-	}
-	fmt.Println(" on floor", stat.Floor)
-}
-
 type OrderState struct {
 	HallOrders [NumFloors][2]HallOrderState //0 is up, 1 is down, use "direction"
 	CabOrders  [NumFloors]CabOrderState
@@ -97,4 +85,16 @@ type OrdersWithConsesus struct {
 type OurOrders struct {
 	HallOrders [NumFloors][2]bool //0 is up, 1 is down, use "direction"
 	CabOrders  [NumFloors]bool
+}
+
+func PrintPhysicalState(stat PhysicalState) {
+	switch stat.Behaviour {
+	case Idle:
+		fmt.Print("Idle ", []string{"Up", "Down"}[stat.MovDirection])
+	case Moving:
+		fmt.Print("Moving ", []string{"Up", "Down"}[stat.MovDirection])
+	case DoorOpen:
+		fmt.Print("DoorOpen ", []string{"Up", "Down"}[stat.MovDirection])
+	}
+	fmt.Println(" on floor", stat.Floor)
 }
