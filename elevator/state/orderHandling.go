@@ -37,9 +37,11 @@ func handleButton(wv *ElevWorldView, event ButtonEvent) {
 			me.OrderState.HallOrders[event.Floor][Down] = HallO
 		}
 	case BT_Cab:
-		me.OrderState.CabOrders[event.Floor] = CabO
-		for elev := 0; elev < NumElevators; elev++ {
-			wv.CabAgreement[elev][event.Floor] = false
+		if(me.OrderState.CabOrders[event.Floor] == CabNO){
+			me.OrderState.CabOrders[event.Floor] = CabO
+			for elev := 0; elev < NumElevators; elev++ {
+				wv.CabAgreement[elev][event.Floor] = false
+			}
 		}
 	}
 }
