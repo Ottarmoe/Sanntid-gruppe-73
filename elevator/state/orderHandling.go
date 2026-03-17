@@ -44,12 +44,12 @@ func handleButton(wv *ElevWorldView, event ButtonEvent) {
 	}
 }
 
-func findConsensus(wv ElevWorldView) OrdersWithConsesus {
-	var ordersWithConsesus OrdersWithConsesus
-	ordersWithConsesus.ID = wv.ID
+func findConsensus(wv ElevWorldView) OrdersWithConsensus {
+	var ordersWithConsensus OrdersWithConsensus
+	ordersWithConsensus.ID = wv.ID
 	for elev := 0; elev < NumElevators; elev++ {
 		for floor := 0; floor < NumFloors; floor++ {
-			ordersWithConsesus.CabOrders[elev][floor] = (wv.ElevStates[elev].OrderState.CabOrders[floor] == CabO)
+			ordersWithConsensus.CabOrders[elev][floor] = (wv.ElevStates[elev].OrderState.CabOrders[floor] == CabO)
 		}
 	}
 
@@ -79,22 +79,22 @@ func findConsensus(wv ElevWorldView) OrdersWithConsesus {
 		CabOrders := &wv.ElevStates[wv.ID].OrderState.CabOrders
 
 		if (!anyElevExists || hallDownExists) && (HallOrders[floor][Down] == HallO) {
-			ordersWithConsesus.HallOrders[floor][Down] = true
+			ordersWithConsensus.HallOrders[floor][Down] = true
 		} else {
-			ordersWithConsesus.HallOrders[floor][Down] = false
+			ordersWithConsensus.HallOrders[floor][Down] = false
 		}
 		if (!anyElevExists || hallUpExists) && (HallOrders[floor][Up] == HallO) {
-			ordersWithConsesus.HallOrders[floor][Up] = true
+			ordersWithConsensus.HallOrders[floor][Up] = true
 		} else {
-			ordersWithConsesus.HallOrders[floor][Up] = false
+			ordersWithConsensus.HallOrders[floor][Up] = false
 		}
 		if (!anyElevExists || cabExists) && (CabOrders[floor] == CabO) {
-			ordersWithConsesus.CabOrders[wv.ID][floor] = true
+			ordersWithConsensus.CabOrders[wv.ID][floor] = true
 		} else {
-			ordersWithConsesus.CabOrders[wv.ID][floor] = false
+			ordersWithConsensus.CabOrders[wv.ID][floor] = false
 		}
 	}
-	return ordersWithConsesus
+	return ordersWithConsensus
 }
 
 func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {

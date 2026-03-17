@@ -75,8 +75,8 @@ type NetErrorNotification struct {
 	NetError bool
 }
 
-// Consesus struct
-type OrdersWithConsesus struct {
+// Consensus struct
+type OrdersWithConsensus struct {
 	ID         int
 	HallOrders [NumFloors][2]bool //0 is up, 1 is down, use "direction"
 	CabOrders  [NumElevators][NumFloors]bool

@@ -24,7 +24,7 @@ type HRAInput struct {
 }
 
 func HRA(
-	orders OrdersWithConsesus,
+	orders OrdersWithConsensus,
 	physics [NumElevators]PhysicalState,
 	NetError [3]bool,
 ) OurOrders {

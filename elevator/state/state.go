@@ -23,7 +23,7 @@ func StateKeeper(
 	motor <-chan PhysicalState,
 	mechError <-chan bool,
 
-	ordersWithConsesusToHardware chan<- OrdersWithConsesus,
+	ordersWithConsesusToHardware chan<- OrdersWithConsensus,
 	physicsToHardware chan<- PhysicalState,
 
 	stateToController chan<- PhysicalState,
