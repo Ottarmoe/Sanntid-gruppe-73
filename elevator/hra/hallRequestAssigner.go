@@ -11,7 +11,7 @@ import (
 
 // Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
 // This means they must start with a capital letter, so we need to use field renaming struct tags to make them camelCase
-type HRAElevstate struct {
+type HRAElevatorState struct {
 	Behavior    string `json:"behaviour"`
 	Floor       int    `json:"floor"`
 	Direction   string `json:"direction"`
@@ -20,133 +20,67 @@ type HRAElevstate struct {
 
 type HRAInput struct {
 	HallRequests [][2]bool               `json:"hallRequests"`
-	States       map[string]HRAElevstate `json:"states"`
+	States       map[string]HRAElevatorState `json:"states"`
 }
 
-func HRA(
-	orders OrdersWithConsensus,
-	physics [NumElevators]PhysicalState,
-	NetError [3]bool,
-) OurOrders {
-	//sanitize input
-	/*for elev := 0; elev < NumElevators; elev++ {
-		if physics[elev].Floor == 0 {
-			physics[elev].MovDirection = Up
-		}
-		if physics[elev].Floor == NumFloors-1 {
-			physics[elev].MovDirection = Down
-		}
-	}*/
+func HRA(orders OrdersWithConsensus, physics [NumElevators]PhysicalState, netError [NumElevators]bool) OurOrders {
+    input := buildHRAInput(orders, physics, netError)
+    output, err := runHRAExecutable(input)
+    if err != nil {
+        fmt.Println("HRA error: ", err)
+        return OurOrders{}
+    }
+    return extractHRAOrders(output, orders)
+}
 
-	hraExecutable := "hra/hall_request_assigner"
-	id := orders.ID
 
-	input := HRAInput{
+func buildHRAInput(orders OrdersWithConsensus, physics [NumElevators]PhysicalState, netError [NumElevators]bool) HRAInput {
+    input := HRAInput{
 		HallRequests: [][2]bool{{false, false}, {false, false}, {false, false}, {false, false}},
-		States:       make(map[string]HRAElevstate),
-	}
-
+        States:       make(map[string]HRAElevatorState),
+    }
 	input.HallRequests = orders.HallOrders[:]
 
-	//
-	for elev := 0; elev < NumElevators; elev++ {
-		//if no errors, or the elevator is us
-		if !physics[elev].MechError && !NetError[elev] || elev == id {
-
-			input.States[fmt.Sprintf("%d", elev)] = HRAElevstate{
-				Behavior:    []string{"idle", "moving", "doorOpen"}[physics[elev].Behaviour],
-				Floor:       physics[elev].Floor,
-				Direction:   []string{"up", "down"}[physics[elev].MovDirection],
-				CabRequests: orders.CabOrders[elev][:],
-			}
-		}
-	}
-
-	jsonBytes, err := json.Marshal(input)
-	if err != nil {
-		fmt.Println("json.Marshal error: ", err)
-	}
-	//fmt.Println(string(jsonBytes))
-	ret, err := exec.Command(hraExecutable, "-i", string(jsonBytes)).CombinedOutput()
-	if err != nil {
-		fmt.Println("exec.Command error: ", err)
-		fmt.Println(string(ret))
-	}
-
-	output := new(map[string][][2]bool)
-	err = json.Unmarshal(ret, &output)
-	//fmt.Println(string(ret))
-	if err != nil {
-		fmt.Println("json.Unmarshal error: ", err)
-	}
-	//fmt.Printf("output: \n")
-	//for k, v := range *output {
-	//	fmt.Printf("%6v :  %+v\n", k, v)
-	//}
-
-	ourOrders := OurOrders{ //////////////////////////
-		HallOrders: func() [NumFloors][2]bool {
-			var arr [NumFloors][2]bool
-			for i := range arr {
-				arr[i] = (*output)[fmt.Sprintf("%d", id)][i]
-			}
-			return arr
-		}(),
-		CabOrders: orders.CabOrders[id],
-	}
-
-	return ourOrders
+    for elev := 0; elev < NumElevators; elev++ {
+        if !physics[elev].MechError && !netError[elev] || elev == orders.ID {
+            input.States[fmt.Sprintf("%d", elev)] = HRAElevatorState{
+                Behavior:    []string{"idle", "moving", "doorOpen"}[physics[elev].Behaviour],
+                Floor:       physics[elev].Floor,
+                Direction:   []string{"up", "down"}[physics[elev].MovDirection],
+                CabRequests: orders.CabOrders[elev][:],
+            }
+        }
+    }
+    return input
 }
 
-func Test() {
-	hraExecutable := "hra/hall_request_assigner"
-
-	input := HRAInput{
-		HallRequests: [][2]bool{{false, false}, {true, false}, {false, false}, {false, true}},
-		States: map[string]HRAElevstate{
-			"one": HRAElevstate{
-				Behavior:    "moving",
-				Floor:       2,
-				Direction:   "up",
-				CabRequests: []bool{false, false, false, true},
-			},
-			"two": HRAElevstate{
-				Behavior:    "idle",
-				Floor:       0,
-				Direction:   "stop",
-				CabRequests: []bool{false, false, false, false},
-			},
-			"three": HRAElevstate{
-				Behavior:    "idle",
-				Floor:       0,
-				Direction:   "stop",
-				CabRequests: []bool{false, false, false, false},
-			},
-		},
-	}
-
+// runHRAExecutable marshals input to JSON, calls the external assigner binary, and unmarshals the result.
+func runHRAExecutable(input HRAInput) (map[string][][2]bool, error) {
+    hraExecutable := "hra/hall_request_assigner"
+	
 	jsonBytes, err := json.Marshal(input)
-	if err != nil {
-		fmt.Println("json.Marshal error: ", err)
-		return
-	}
+    if err != nil {
+        return nil, fmt.Errorf("json.Marshal: %w", err)
+    }
+    ret, err := exec.Command(hraExecutable, "-i", string(jsonBytes)).CombinedOutput()
+    if err != nil {
+        return nil, fmt.Errorf("exec: %w — output: %s", err, string(ret))
+    }
+    var output map[string][][2]bool
+    if err := json.Unmarshal(ret, &output); err != nil {
+        return nil, fmt.Errorf("json.Unmarshal: %w", err)
+    }
+    return output, nil
+}
 
-	ret, err := exec.Command(hraExecutable, "-i", string(jsonBytes)).CombinedOutput()
-	if err != nil {
-		fmt.Println("exec.Command error: ", err)
-		fmt.Println(string(ret))
-		return
-	}
-
-	output := new(map[string][][2]bool)
-	err = json.Unmarshal(ret, &output)
-	if err != nil {
-		fmt.Println("json.Unmarshal error: ", err)
-		return
-	}
-
-	// fmt.Printf("output: \n")
-	// for k, v := range *output {
-	//     fmt.Printf("%6v :  %+v\n", k, v)
-	// }
+// extractHRAOrders picks this elevator's assigned hall orders from the assigner output and combines with cab orders.
+func extractHRAOrders(output map[string][][2]bool, orders OrdersWithConsensus) OurOrders {
+    var hallOrders [NumFloors][2]bool
+    for i := range hallOrders {
+        hallOrders[i] = output[fmt.Sprintf("%d", orders.ID)][i]
+    }
+    return OurOrders{
+        HallOrders: hallOrders,
+        CabOrders:  orders.CabOrders[orders.ID],
+    }
 }
