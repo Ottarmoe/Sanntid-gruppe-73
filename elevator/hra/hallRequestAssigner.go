@@ -29,14 +29,14 @@ func HRA(
 	NetError [3]bool,
 ) OurOrders {
 	//sanitize input
-	/*for elev := 0; elev < NumElevators; elev++ {
+	for elev := 0; elev < NumElevators; elev++ {
 		if physics[elev].Floor == 0 {
 			physics[elev].MovDirection = Up
 		}
 		if physics[elev].Floor == NumFloors-1 {
 			physics[elev].MovDirection = Down
 		}
-	}*/
+	}
 
 	hraExecutable := "hra/hall_request_assigner"
 	id := orders.ID
