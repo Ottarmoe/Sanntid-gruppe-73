@@ -1,28 +1,26 @@
 package logicalController
 
 import (
-	//. "elevator/elevatorConstants"
-	//. "elevator/state"
-	. "elevator/stateTypes"
-	// "fmt"
+	."elevator/stateTypes"
 	"math"
 	"time"
+	"elevator/elevatorConstants"
 )
 
-func Controller(
-	references <-chan PhysicalState,
+func ElevatorController(
+	referenceState <-chan PhysicalState,
 	actualStates <-chan PhysicalState,
 	obstruction <-chan bool,
-	referenceRequest chan<- struct{},
+	referenceStateRequest chan<- struct{},
 	physicalStateUpdate chan<- PhysicalState,
 	mechError chan<- bool,
 ) {
 	goIdle := make(chan struct{})
-	newDeadLine := make(chan float64)
-	go inspector(newDeadLine, goIdle, mechError)
+	newDeadline := make(chan float64)
+	go mechErrorWatchdog(newDeadline, goIdle, mechError)
 	doorClosed := make(chan struct{})
-	doorOpenFor := make(chan float64)
-	go doors(doorOpenFor, doorClosed, obstruction)
+	doorOpenDuration := make(chan float64)
+	go doors(doorOpenDuration, doorClosed, obstruction)
 
 	actualState := <-actualStates
 	ref := actualState
@@ -37,7 +35,7 @@ func Controller(
 			actualState.MovDirection = ref.MovDirection
 			if actualState.Behaviour != ref.Behaviour {
 				if ref.Behaviour == DoorOpen {
-					doorOpenFor <- 3.
+					doorOpenDuration <- elevatorConstants.DoorOpenDuration
 					actualState.Behaviour = DoorOpen
 				} else if ref.Behaviour == Idle && actualState.Behaviour != DoorOpen {
 					actualState.Behaviour = Idle
@@ -57,8 +55,8 @@ func Controller(
 				//fmt.Println("i should move up")
 			}
 			if actualState.Behaviour != Moving {
+				actualState.Behaviour = Moving
 			}
-			actualState.Behaviour = Moving
 
 		}
 		if initialState != actualState {
@@ -68,7 +66,7 @@ func Controller(
 		}
 		if actualState == ref && doReferenceRequest {
 			// fmt.Println("i have reached my goal")
-			referenceRequest <- struct{}{}
+			referenceStateRequest <- struct{}{}
 			if actualState.Behaviour == Idle {
 				goIdle <- struct{}{}
 			}
@@ -84,19 +82,19 @@ func Controller(
 			// PrintPhysicalState(actualState)
 			// fmt.Print("r ")
 			// PrintPhysicalState(ref)
-		case _ = <-doorClosed:
+		case <-doorClosed:
 			actualState.Behaviour = Idle
-		case ref = <-references:
+		case ref = <-referenceState:
 			ref.MechError = false
 			//fmt.Println("is reference", ref, "not the same as actual", actualState)
 			if ref != actualState {
 				expectedTime := 0.
-				expectedTime += math.Abs(float64(ref.Floor-actualState.Floor)) * 7.
+				expectedTime += math.Abs(float64(ref.Floor-actualState.Floor)) * elevatorConstants.SecondsPerFloor
 				if actualState.Behaviour == DoorOpen {
-					expectedTime += 4. //adjust this to adjust sensitivity to obstruction
+					expectedTime += elevatorConstants.DoorObstructionBuffer //adjust this to adjust sensitivity to obstruction
 				}
-				expectedTime += 2
-				newDeadLine <- expectedTime
+				expectedTime += elevatorConstants.DeadlineBuffer
+				newDeadline <- expectedTime
 				// fmt.Print("R ")
 				PrintPhysicalState(ref)
 			}
@@ -106,27 +104,27 @@ func Controller(
 
 }
 
-func burnoutTimer(span float64, burnout chan<- struct{}) {
-	time.Sleep(time.Second * time.Duration(span))
+func burnoutTimer(duration float64, burnout chan<- struct{}) {
+	time.Sleep(time.Second * time.Duration(duration))
 	burnout <- struct{}{}
 }
 
-func doors(HoldOpenFor <-chan float64, doorsClosed chan<- struct{}, obstruction <-chan bool) {
+func doors(holdOpenFor <-chan float64, doorsClosed chan<- struct{}, obstruction <-chan bool) {
 	numTimers := 0
 	obs := false
 	burnoutReturn := make(chan struct{})
 
 	for {
 		select {
-		case deadline := <-HoldOpenFor:
+		case deadline := <-holdOpenFor:
 			go burnoutTimer(deadline, burnoutReturn)
 			numTimers++
 		case obs = <-obstruction:
 			if !obs {
 				numTimers++
-				go burnoutTimer(3., burnoutReturn)
+				go burnoutTimer(elevatorConstants.DoorOpenDuration, burnoutReturn)
 			}
-		case _ = <-burnoutReturn:
+		case <-burnoutReturn:
 			numTimers--
 			if numTimers == 0 && !obs {
 				doorsClosed <- struct{}{}
@@ -135,28 +133,28 @@ func doors(HoldOpenFor <-chan float64, doorsClosed chan<- struct{}, obstruction 
 	}
 }
 
-func inspector(ExpectedTimeToNextGoal <-chan float64, goIdle <-chan struct{}, mechErrorSignal chan<- bool) {
+func mechErrorWatchdog(deadline <-chan float64, goIdle <-chan struct{}, mechErrorSignal chan<- bool) {
 	numTimers := 0
 	burnoutReturn := make(chan struct{})
 	idle := true
 
 	for {
 		select {
-		case deadline := <-ExpectedTimeToNextGoal:
-			go burnoutTimer(deadline, burnoutReturn)
+		case d := <-deadline:
+			go burnoutTimer(d, burnoutReturn)
 			if numTimers == 0 {
 				mechErrorSignal <- false
 			}
 			numTimers++
 			idle = false
 			//fmt.Println("no longer idle")
-		case _ = <-burnoutReturn:
+		case <- burnoutReturn:
 			numTimers--
 			if numTimers == 0 && !idle {
 				mechErrorSignal <- true
 			}
 
-		case _ = <-goIdle:
+		case <-goIdle:
 			//fmt.Println("gone idle")
 			idle = true
 		}

@@ -2,7 +2,7 @@ package main
 
 import (
 	. "elevator/elevatorConstants"
-	. "elevator/hardwareControl"
+	 "elevator/hardwareController"
 	. "elevator/network"
 	"elevator/networkLow"
 
@@ -53,8 +53,8 @@ func main() {
 		ordersWithConsensusToHardware, physicsToHardware,
 		stat_to_controller, ref_request, ref_to_controller,
 		netMessageToNetworkSender, netMessageToState, netErrorToState)
-	go HardwareControl(physicsToHardware, ordersWithConsensusToHardware)
-	go logicalController.Controller(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
+	go hardwareController.HardwareController(physicsToHardware, ordersWithConsensusToHardware)
+	go logicalController.ElevatorController(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
 	go NetworkSender(netMessageToNetworkSender)
 	go NetworkReceiver(netMessageToState, netErrorToState)
 

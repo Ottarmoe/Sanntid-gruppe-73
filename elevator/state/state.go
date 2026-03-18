@@ -2,7 +2,7 @@ package state
 
 import (
 	. "elevator/elevatorConstants"
-	"elevator/hra"
+	"elevator/hallRequestAssigner"
 	"elevator/referenceGenerator"
 	. "elevator/stateTypes"
 	. "elevio"
@@ -71,7 +71,7 @@ func StateKeeper(
 				physics[elev] = wView.ElevStates[elev].PhysicalState
 			}
 			ordersWithConsesus := findConsensus(wView)
-			relevantOrders := hra.HRA(ordersWithConsesus, physics, wView.NetError)
+			relevantOrders := hallRequestAssigner.HRA(ordersWithConsesus, physics, wView.NetError)
 			ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
 			_ = ref
 			refToController <- ref

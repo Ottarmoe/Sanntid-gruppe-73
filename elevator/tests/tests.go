@@ -2,7 +2,7 @@ package tests
 
 import (
 	. "elevator/elevatorConstants"
-	"elevator/hra"
+	"elevator/hallRequestAssigner"
 	"elevator/state"
 	. "elevator/stateTypes"
 	"elevator/utilities"
@@ -97,7 +97,7 @@ func HallOrderStateString(x HallOrderState) string {
 }
 
 func TimeHRA() {
-	total, avg := utilities.TimeN(5, hra.Test)
+	total, avg := utilities.TimeN(5, hallRequestAssigner.Test)
 	fmt.Println("Total:", total)
 	fmt.Println("Avg:", avg)
 }
