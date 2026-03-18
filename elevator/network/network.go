@@ -3,10 +3,9 @@ package network
 import (
 	"elevator/networkLow"
 	. "elevator/stateTypes"
+	. "elevator/elevatorConstants"
 	"fmt"
 	"time"
-
-	. "elevator/elevatorConstants"
 	"encoding/json"
 	"log"
 )
