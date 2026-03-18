@@ -2,6 +2,7 @@ package logicalControl
 
 import (
 	. "elevator/elevatorConstants"
+
 	//. "elevator/state"
 	. "elevator/stateTypes"
 	// "fmt"
@@ -86,7 +87,8 @@ func Controller(
 				}
 				expectedTime += DeadlineBuffer
 				watchDogNewDeadLineCh <- expectedTime
-				PrintPhysicalState(referenceState)
+				//fmt.Printf("R ")
+				//PrintPhysicalState(referenceState)
 			}
 			doReferenceRequest = false
 		}

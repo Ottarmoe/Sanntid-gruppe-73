@@ -34,7 +34,7 @@ func main() {
 	ref_to_controller := make(chan PhysicalState)
 	stat_to_controller := make(chan PhysicalState, 10)
 
-	netMessageToNetworkSender := make(chan NetMessage)
+	netMessageToNetworkSender := make(chan NetMessage, 10)
 	netMessageToState := make(chan NetMessage)
 	netErrorToState := make(chan NetErrorNotification)
 	pokeStateCh := make(chan struct{})
