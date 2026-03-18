@@ -40,6 +40,8 @@ func StateKeeper(
 	me := &wView.ElevStates[id]
 	physicalState := &me.PhysicalState
 	stateToController <- *physicalState
+	var lastRef PhysicalState
+	lastRef.Floor = -999
 
 	// last := time.Now() //For debugging
 
@@ -75,8 +77,11 @@ func StateKeeper(
 			relevantOrders := hallRequestAssigner.HRA(ordersWithConsensus, physics, wView.NetError)
 			ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
 			_ = ref
-			fmt.Println("sending ref to conntroller")
-			refToController <- ref
+			//fmt.Println("sending ref to conntroller")
+			if lastRef != ref {
+				refToController <- ref
+			}
+			lastRef = ref
 			stateChanged = false
 		case <-poke:
 			stateChanged = false
@@ -86,7 +91,7 @@ func StateKeeper(
 		if stateChanged {
 			//Update hardware
 			ordersWithConsensus := findConsensus(wView)
-			fmt.Println("sending to hardware")
+			//fmt.Println("sending to hardware")
 			ordersWithConsensusToHardware <- ordersWithConsensus
 			physicsToHardware <- *physicalState
 
@@ -100,9 +105,9 @@ func StateKeeper(
 				ElevState:  *me,
 				CabBackups: cabBackups,
 			}
-			fmt.Println("sending to net")
+			//fmt.Println("sending to net")
 			netMessageToNetworkSender <- netMessage
-			fmt.Println("sending to conntroller")
+			//fmt.Println("sending to conntroller")
 			stateToController <- *physicalState
 		}
 	}
