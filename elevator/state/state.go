@@ -33,6 +33,8 @@ func StateKeeper(
 	netMessageToNetworkSender chan<- NetMessage,
 	netMessageToState <-chan NetMessage,
 	netErrorToState <-chan NetErrorNotification,
+
+	poke <-chan struct{},
 ) {
 	var wView ElevWorldView = initWorldView(id, initfloor)
 	me := &wView.ElevStates[id]
@@ -43,7 +45,7 @@ func StateKeeper(
 
 	for {
 		// PrintElevState(*me)
-		sendToController := true
+		stateChanged := true
 		select {
 		case buttonEvent := <-buttonClick:
 			handleButton(&wView, buttonEvent)
@@ -74,28 +76,30 @@ func StateKeeper(
 			ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
 			_ = ref
 			refToController <- ref
-			sendToController = false
+			stateChanged = false
+		case <-poke:
+			stateChanged = false
 		}
 		handleOrderDynamics(&wView)
 
-		//Update hardware
-		ordersWithConsensus := findConsensus(wView)
-		ordersWithConsensusToHardware <- ordersWithConsensus
-		physicsToHardware <- *physicalState
+		if stateChanged {
+			//Update hardware
+			ordersWithConsensus := findConsensus(wView)
+			ordersWithConsensusToHardware <- ordersWithConsensus
+			physicsToHardware <- *physicalState
 
-		//New state info to network
-		var cabBackups [NumElevators][NumFloors]CabOrderState
-		for elev := 0; elev < NumElevators; elev++ {
-			cabBackups[elev] = wView.ElevStates[elev].OrderState.CabOrders
-		}
-		netMessage := NetMessage{
-			ID:         id,
-			ElevState:  *me,
-			CabBackups: cabBackups,
-		}
-		netMessageToNetworkSender <- netMessage
+			//New state info to network
+			var cabBackups [NumElevators][NumFloors]CabOrderState
+			for elev := 0; elev < NumElevators; elev++ {
+				cabBackups[elev] = wView.ElevStates[elev].OrderState.CabOrders
+			}
+			netMessage := NetMessage{
+				ID:         id,
+				ElevState:  *me,
+				CabBackups: cabBackups,
+			}
+			netMessageToNetworkSender <- netMessage
 
-		if sendToController {
 			stateToController <- *physicalState
 		}
 	}

@@ -37,6 +37,7 @@ func main() {
 	netMessageToNetworkSender := make(chan NetMessage)
 	netMessageToState := make(chan NetMessage)
 	netErrorToState := make(chan NetErrorNotification)
+	pokeStateCh := make(chan struct{})
 
 	ordersWithConsensusToHardware := make(chan OrdersWithConsensus)
 	physicsToHardware := make(chan PhysicalState)
@@ -52,10 +53,11 @@ func main() {
 		sense_buttons, sense_floor, int_mot, int_mech,
 		ordersWithConsensusToHardware, physicsToHardware,
 		stat_to_controller, ref_request, ref_to_controller,
-		netMessageToNetworkSender, netMessageToState, netErrorToState)
+		netMessageToNetworkSender, netMessageToState, netErrorToState,
+		pokeStateCh)
 	go HardWareControl(physicsToHardware, ordersWithConsensusToHardware)
 	go logicalControl.Controller(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
-	go NetworkSender(netMessageToNetworkSender)
+	go NetworkSender(netMessageToNetworkSender, pokeStateCh)
 	go NetworkReceiver(netMessageToState, netErrorToState)
 
 	select {}

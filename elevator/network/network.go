@@ -11,7 +11,7 @@ import (
 	"log"
 )
 
-func NetworkSender(netMessageToNetworkSender <-chan NetMessage) {
+func NetworkSender(netMessageToNetworkSender <-chan NetMessage, pokeState chan<- struct{}) {
 	timeToSend := time.NewTicker(time.Duration(BroadcastRate * float64(time.Second)))
 
 	netMessage := <-netMessageToNetworkSender
@@ -21,6 +21,7 @@ func NetworkSender(netMessageToNetworkSender <-chan NetMessage) {
 		case netMessage = <-netMessageToNetworkSender:
 
 		case <-timeToSend.C:
+			pokeState <- struct{}{}
 			data, err := json.Marshal(netMessage)
 			//fmt.Println(string(data))
 			if err != nil {
