@@ -46,7 +46,6 @@ func StateKeeper(
 		sendToController := true
 		select {
 		case buttonEvent := <-buttonClick:
-			//TODO: only transition to order when consensus on NO
 			handleButton(&wView, buttonEvent)
 		case floorEvent := <-floorReached:
 			//fmt.Print("floor update", floorEvent, "\n")
@@ -99,7 +98,6 @@ func StateKeeper(
 		if sendToController {
 			stateToController <- *physicalState
 		}
-
 	}
 }
 
@@ -114,7 +112,7 @@ func initWorldView(id int, initfloor int) ElevWorldView {
 		for floor := 0; floor < NumFloors; floor++ {
 			wView.ElevStates[elev].OrderState.HallOrders[floor][Down] = HallNO
 			wView.ElevStates[elev].OrderState.HallOrders[floor][Up] = HallNO
-			wView.ElevStates[elev].OrderState.CabOrders[floor] = CabNO
+			wView.ElevStates[elev].OrderState.CabOrders[floor] = CabUO
 		}
 	}
 

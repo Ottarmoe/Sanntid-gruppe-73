@@ -37,9 +37,11 @@ func handleButton(wv *ElevWorldView, event ButtonEvent) {
 			me.OrderState.HallOrders[event.Floor][Down] = HallO
 		}
 	case BT_Cab:
-		me.OrderState.CabOrders[event.Floor] = CabO
-		for elev := 0; elev < NumElevators; elev++ {
-			wv.CabAgreement[elev][event.Floor] = false
+		if me.OrderState.CabOrders[event.Floor] != CabO {
+			me.OrderState.CabOrders[event.Floor] = CabO
+			for elev := 0; elev < NumElevators; elev++ {
+				wv.CabAgreement[elev][event.Floor] = false
+			}
 		}
 	}
 }
@@ -128,6 +130,7 @@ func handleOrderDynamics(wv *ElevWorldView) {
 	//and removal of cab order
 	if physics.Behaviour == DoorOpen && !elevator.PhysicalState.MechError {
 		//cab order
+		//does not need to change CabAgreement
 		elevator.OrderState.CabOrders[physics.Floor] = CabNO
 		//hall order
 		//is everyone in Order or OPR?

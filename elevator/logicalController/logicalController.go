@@ -32,7 +32,7 @@ func Controller(
 	for {
 		//react and control
 
-		//if we have reached the right floor, but not yet entered the right state
+		//if we have reached the right floor
 		if actualState.Floor == ref.Floor {
 			actualState.MovDirection = ref.MovDirection
 			if actualState.Behaviour != ref.Behaviour {
@@ -46,15 +46,13 @@ func Controller(
 				}
 			}
 		}
-		//fmt.Println("i am at", actualState.Floor, "i should be at", ref.Floor)
+		//if we are not yet on the right floor
 		if ref.Floor != actualState.Floor {
 			if ref.Floor < actualState.Floor {
 				actualState.MovDirection = Down
-				//fmt.Println("i should move down")
 			}
 			if ref.Floor > actualState.Floor {
 				actualState.MovDirection = Up
-				//fmt.Println("i should move up")
 			}
 			if actualState.Behaviour != Moving {
 			}
@@ -62,12 +60,9 @@ func Controller(
 
 		}
 		if initialState != actualState {
-			//fmt.Print("sending new state")
-			//PrintPhysicalState(actualState)
 			physicalStateUpdate <- actualState
 		}
 		if actualState == ref && doReferenceRequest {
-			// fmt.Println("i have reached my goal")
 			referenceRequest <- struct{}{}
 			if actualState.Behaviour == Idle {
 				goIdle <- struct{}{}
@@ -80,15 +75,10 @@ func Controller(
 		case newActual := <-actualStates:
 			newActual.MechError = false //controller always tries to move as if it is fully functional
 			actualState.Floor = newActual.Floor
-			// fmt.Print("S ")
-			// PrintPhysicalState(actualState)
-			// fmt.Print("r ")
-			// PrintPhysicalState(ref)
 		case _ = <-doorClosed:
 			actualState.Behaviour = Idle
 		case ref = <-references:
 			ref.MechError = false
-			//fmt.Println("is reference", ref, "not the same as actual", actualState)
 			if ref != actualState {
 				expectedTime := 0.
 				expectedTime += math.Abs(float64(ref.Floor-actualState.Floor)) * 7.
@@ -97,7 +87,6 @@ func Controller(
 				}
 				expectedTime += 2
 				newDeadLine <- expectedTime
-				// fmt.Print("R ")
 				PrintPhysicalState(ref)
 			}
 			doReferenceRequest = false
