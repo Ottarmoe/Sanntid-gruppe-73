@@ -8,6 +8,7 @@ import (
 
 func HardWareControl(physicalToHardware <-chan PhysicalState, ordersWithConsensusToHardwarech <-chan OrdersWithConsensus) {
 	var prevConsensus OrdersWithConsensus
+	resetLights()
 	for {
 		select {
 		case physicalState := <-physicalToHardware:
@@ -54,5 +55,13 @@ func ordersWithConsensusToHardware(orders OrdersWithConsensus, prev OrdersWithCo
 		if orders.CabOrders[orders.ID][floor] != prev.CabOrders[orders.ID][floor] {
 			SetButtonLamp(BT_Cab, floor, orders.CabOrders[orders.ID][floor])
 		}
+	}
+}
+
+func resetLights() {
+	for floor := 0; floor < NumFloors; floor++ {
+		SetButtonLamp(BT_HallDown, floor, false)
+		SetButtonLamp(BT_HallUp, floor, false)
+		SetButtonLamp(BT_Cab, floor, false)
 	}
 }

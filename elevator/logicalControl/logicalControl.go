@@ -5,7 +5,7 @@ import (
 
 	//. "elevator/state"
 	. "elevator/stateTypes"
-	// "fmt"
+	"fmt"
 	"math"
 	"time"
 )
@@ -60,6 +60,8 @@ func Controller(
 		}
 		//if anything was changed
 		if initialState != currentPhysicalState {
+			fmt.Print("S ")
+			PrintPhysicalState(referenceState)
 			physicalStateOutCh <- currentPhysicalState
 		}
 		if currentPhysicalState == referenceState && doReferenceRequest {
@@ -87,8 +89,8 @@ func Controller(
 				}
 				expectedTime += DeadlineBuffer
 				watchDogNewDeadLineCh <- expectedTime
-				//fmt.Printf("R ")
-				//PrintPhysicalState(referenceState)
+				fmt.Printf("R ")
+				PrintPhysicalState(referenceState)
 			}
 			doReferenceRequest = false
 		}
