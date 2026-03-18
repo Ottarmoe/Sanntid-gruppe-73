@@ -8,7 +8,7 @@ import (
 
 	//"elevator/referenceGenerator"
 
-	"elevator/logicalController"
+	"elevator/logicalControl"
 	"elevator/state"
 	. "elevator/stateTypes"
 	"elevio"
@@ -38,7 +38,7 @@ func main() {
 	netMessageToState := make(chan NetMessage)
 	netErrorToState := make(chan NetErrorNotification)
 
-	ordersWithConsesusToHardware := make(chan OrdersWithConsesus)
+	ordersWithConsensusToHardware := make(chan OrdersWithConsensus)
 	physicsToHardware := make(chan PhysicalState)
 
 	startfloor := PhysicalInit()
@@ -50,11 +50,11 @@ func main() {
 
 	go state.StateKeeper(ID(), startfloor,
 		sense_buttons, sense_floor, int_mot, int_mech,
-		ordersWithConsesusToHardware, physicsToHardware,
+		ordersWithConsensusToHardware, physicsToHardware,
 		stat_to_controller, ref_request, ref_to_controller,
 		netMessageToNetworkSender, netMessageToState, netErrorToState)
-	go HardWareControl(physicsToHardware, ordersWithConsesusToHardware)
-	go logicalController.Controller(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
+	go HardWareControl(physicsToHardware, ordersWithConsensusToHardware)
+	go logicalControl.Controller(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
 	go NetworkSender(netMessageToNetworkSender)
 	go NetworkReceiver(netMessageToState, netErrorToState)
 
@@ -66,8 +66,9 @@ func PhysicalInit() int {
 		return GetFloor()
 	}
 	SetMotorDirection(MD_Down)
-	for GetFloor() == -1 {}
-	
+	for GetFloor() == -1 {
+	}
+
 	SetMotorDirection(MD_Stop)
 	return GetFloor()
 }

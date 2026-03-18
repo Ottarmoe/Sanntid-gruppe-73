@@ -6,46 +6,53 @@ import (
 	. "elevio"
 )
 
-func HardWareControl(physicsToHardware <-chan PhysicalState, ordersWithConsesusToHardware <-chan OrdersWithConsesus) {
-	var prevConsensus OrdersWithConsesus
+func HardWareControl(physicalToHardware <-chan PhysicalState, ordersWithConsensusToHardwarech <-chan OrdersWithConsensus) {
+	var prevConsensus OrdersWithConsensus
 	for {
 		select {
-		case physicalState := <-physicsToHardware:
-			SetFloorIndicator(physicalState.Floor)
+		case physicalState := <-physicalToHardware:
+			physicalStateToHardware(physicalState)
 
-			if physicalState.Behaviour == Idle {
-				SetMotorDirection(0)
-				SetDoorOpenLamp(false)
-			}
+		case ordersWithConsensus := <-ordersWithConsensusToHardwarech:
+			ordersWithConsensusToHardware(ordersWithConsensus, prevConsensus)
+			prevConsensus = ordersWithConsensus
+		}
+	}
+}
 
-			if physicalState.Behaviour == Moving {
-				SetDoorOpenLamp(false)
-				//fmt.Println("moving", physicalState.MovDirection)
-				if physicalState.MovDirection == Up {
-					SetMotorDirection(1)
-				}
-				if physicalState.MovDirection == Down {
-					SetMotorDirection(-1)
-				}
-			}
-			if physicalState.Behaviour == DoorOpen {
-				SetMotorDirection(0)
-				SetDoorOpenLamp(true)
-			}
+// physicalStateToHardware drives motor and door lamp to match the current behaviour
+func physicalStateToHardware(state PhysicalState) {
+	SetFloorIndicator(state.Floor)
+	switch state.Behaviour {
+	case Idle:
+		SetMotorDirection(MD_Stop)
+		SetDoorOpenLamp(false)
+	case Moving:
+		SetDoorOpenLamp(false)
+		if state.MovDirection == Up {
+			SetMotorDirection(MD_Up)
+		}
+		if state.MovDirection == Down {
+			SetMotorDirection(MD_Down)
+		}
+	case DoorOpen:
+		SetMotorDirection(MD_Stop)
+		SetDoorOpenLamp(true)
+	}
+}
 
-		case ordersWithConsesus := <-ordersWithConsesusToHardware:
-			for floor := 0; floor < NumFloors; floor++ {
-				if ordersWithConsesus.HallOrders[floor][Down] != prevConsensus.HallOrders[floor][Down] {
-					SetButtonLamp(BT_HallDown, floor, ordersWithConsesus.HallOrders[floor][Down])
-				}
-				if ordersWithConsesus.HallOrders[floor][Up] != prevConsensus.HallOrders[floor][Up] {
-					SetButtonLamp(BT_HallUp, floor, ordersWithConsesus.HallOrders[floor][Up])
-				}
-				if ordersWithConsesus.CabOrders[ordersWithConsesus.ID][floor] != prevConsensus.CabOrders[ordersWithConsesus.ID][floor] {
-					SetButtonLamp(BT_Cab, floor, ordersWithConsesus.CabOrders[ordersWithConsesus.ID][floor])
-				}
-			}
-			prevConsensus = ordersWithConsesus
+// ordersWithConsensusToHardware updates button lamps to reflect agreed-upon orders.
+// Only updates lamps that have changed since the last update to minimize redundant hardware call
+func ordersWithConsensusToHardware(orders OrdersWithConsensus, prev OrdersWithConsensus) {
+	for floor := 0; floor < NumFloors; floor++ {
+		if orders.HallOrders[floor][Down] != prev.HallOrders[floor][Down] {
+			SetButtonLamp(BT_HallDown, floor, orders.HallOrders[floor][Down])
+		}
+		if orders.HallOrders[floor][Up] != prev.HallOrders[floor][Up] {
+			SetButtonLamp(BT_HallUp, floor, orders.HallOrders[floor][Up])
+		}
+		if orders.CabOrders[orders.ID][floor] != prev.CabOrders[orders.ID][floor] {
+			SetButtonLamp(BT_Cab, floor, orders.CabOrders[orders.ID][floor])
 		}
 	}
 }

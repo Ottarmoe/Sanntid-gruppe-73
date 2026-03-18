@@ -2,7 +2,7 @@ package state
 
 import (
 	. "elevator/elevatorConstants"
-	"elevator/hra"
+	"elevator/hallRequestAssigner"
 	"elevator/referenceGenerator"
 	. "elevator/stateTypes"
 	. "elevio"
@@ -23,7 +23,7 @@ func StateKeeper(
 	motor <-chan PhysicalState,
 	mechError <-chan bool,
 
-	ordersWithConsesusToHardware chan<- OrdersWithConsesus,
+	ordersWithConsensusToHardware chan<- OrdersWithConsensus,
 	physicsToHardware chan<- PhysicalState,
 
 	stateToController chan<- PhysicalState,
@@ -69,8 +69,8 @@ func StateKeeper(
 			for elev := 0; elev < NumElevators; elev++ {
 				physics[elev] = wView.ElevStates[elev].PhysicalState
 			}
-			ordersWithConsesus := findConsensus(wView)
-			relevantOrders := hra.HRA(ordersWithConsesus, physics, wView.NetError)
+			ordersWithConsensus := findConsensus(wView)
+			relevantOrders := hallRequestAssigner.HRA(ordersWithConsensus, physics, wView.NetError)
 			ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
 			_ = ref
 			refToController <- ref
@@ -79,8 +79,8 @@ func StateKeeper(
 		handleOrderDynamics(&wView)
 
 		//Update hardware
-		ordersWithConsesus := findConsensus(wView)
-		ordersWithConsesusToHardware <- ordersWithConsesus
+		ordersWithConsensus := findConsensus(wView)
+		ordersWithConsensusToHardware <- ordersWithConsensus
 		physicsToHardware <- *physicalState
 
 		//New state info to network
