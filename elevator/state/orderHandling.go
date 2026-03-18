@@ -102,12 +102,13 @@ func findConsensus(wv ElevWorldView) OrdersWithConsensus {
 func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	wv.ElevStates[netMessage.ID].OrderState.HallOrders = netMessage.ElevState.OrderState.HallOrders
 
+	//atchive their cab state
 	for floor := 0; floor < NumFloors; floor++ {
-		if(netMessage.ElevState.OrderState.CabOrders[floor] != CabUO){
+		if netMessage.ElevState.OrderState.CabOrders[floor] != CabUO {
 			wv.ElevStates[netMessage.ID].OrderState.CabOrders[floor] = netMessage.ElevState.OrderState.CabOrders[floor]
 		}
 	}
-
+	//check if their archive is up to date
 	for floor := 0; floor < NumFloors; floor++ {
 		if netMessage.CabBackups[ID()][floor] == wv.ElevStates[ID()].OrderState.CabOrders[floor] {
 			wv.CabAgreement[netMessage.ID][floor] = true
@@ -115,7 +116,7 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 			wv.CabAgreement[netMessage.ID][floor] = false
 		}
 	}
-
+	//if that elevator not yet seen, integrate their archive
 	if !wv.CabArchiveSeen[netMessage.ID] {
 		for floor := 0; floor < NumFloors; floor++ {
 			if wv.ElevStates[ID()].OrderState.CabOrders[floor] == CabUO {
@@ -125,6 +126,16 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 			}
 		}
 		wv.CabArchiveSeen[netMessage.ID] = true
+	}
+	//if some elevator is in net error, diffuse their cab archive from this other elevator
+	for elev := 0; elev < NumElevators; elev++ {
+		if wv.NetError[elev] {
+			for floor := 0; floor < NumFloors; floor++ {
+				if netMessage.CabBackups[elev][floor] == CabO {
+					wv.ElevStates[elev].OrderState.CabOrders[floor] = CabO
+				}
+			}
+		}
 	}
 }
 func handleOrderDynamics(wv *ElevWorldView) {
@@ -149,7 +160,7 @@ func handleOrderDynamics(wv *ElevWorldView) {
 			elevator.OrderState.HallOrders[physics.Floor][physics.MovDirection] = HallOPR
 		}
 	}
-
+	//order diffusion
 	for floor := 0; floor < NumFloors; floor++ {
 		for _, dir := range []Direction{Up, Down} {
 			//construct array of other elevators

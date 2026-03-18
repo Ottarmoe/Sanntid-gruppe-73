@@ -77,7 +77,7 @@ func StateKeeper(
 			relevantOrders := hallRequestAssigner.HRA(ordersWithConsensus, physics, wView.NetError)
 			ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
 			_ = ref
-			//fmt.Println("sending ref to conntroller")
+			//fmt.Println("sending ref to controller")
 			if lastRef != ref {
 				refToController <- ref
 			}
