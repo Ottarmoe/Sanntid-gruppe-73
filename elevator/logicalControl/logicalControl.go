@@ -19,8 +19,8 @@ func Controller(
 	mechError chan<- bool,
 ) {
 	watchDogGoIdleCh := make(chan struct{})
-	watchDogNewDeadLineCh := make(chan float64)
-	go watchdog(watchDogNewDeadLineCh, watchDogGoIdleCh, mechError)
+	watchDogNewDeadlineCh := make(chan float64)
+	go watchdog(watchDogNewDeadlineCh, watchDogGoIdleCh, mechError)
 	doorClosedEventCh := make(chan struct{})
 	openDoorDurationCh := make(chan float64)
 	go doors(openDoorDurationCh, doorClosedEventCh, obstructionCh)
@@ -88,7 +88,7 @@ func Controller(
 					expectedTime += DoorObstructionBuffer //adjust this to adjust sensitivity to obstruction
 				}
 				expectedTime += DeadlineBuffer
-				watchDogNewDeadLineCh <- expectedTime
+				watchDogNewDeadlineCh <- expectedTime
 				fmt.Printf("R ")
 				PrintPhysicalState(referenceState)
 			}
