@@ -4,6 +4,9 @@ feutures
 -edge cases on cab archiving (requires two unique messages in current configuration)
 share 
 
+?
+Håndtere netmessage med feil id
+
 code quality
 - use gofmt
 - get functions instead of extremely long encapsulations. Ev. annen løsning.

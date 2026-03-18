@@ -96,3 +96,5 @@ func PrintPhysicalState(stat PhysicalState) {
 	}
 	fmt.Println(" on floor", stat.Floor)
 }
+
+//Hardware event types

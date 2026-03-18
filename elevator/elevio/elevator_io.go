@@ -1,13 +1,10 @@
 package elevio
 
-import "time"
 import "sync"
 import "net"
 import "fmt"
+import . "elevator/stateTypes"
 
-
-
-const _pollRate = 20 * time.Millisecond
 
 var _initialized    bool = false
 var _numFloors      int = 4
@@ -34,8 +31,6 @@ type ButtonEvent struct {
 	Floor  int
 	Button ButtonType
 }
-
-
 
 func Init(addr string, numFloors int) {
 	if _initialized {
@@ -75,62 +70,6 @@ func SetStopLamp(value bool) {
 }
 
 
-
-func PollButtons(receiver chan<- ButtonEvent) {
-	prev := make([][3]bool, _numFloors)
-	for {
-		time.Sleep(_pollRate)
-		for f := 0; f < _numFloors; f++ {
-			for b := ButtonType(0); b < 3; b++ {
-				v := GetButton(b, f)
-				if v != prev[f][b] && v != false {
-					receiver <- ButtonEvent{f, ButtonType(b)}
-				}
-				prev[f][b] = v
-			}
-		}
-	}
-}
-
-func PollFloorSensor(receiver chan<- int) {
-	prev := -1
-	for {
-		time.Sleep(_pollRate)
-		v := GetFloor()
-		if v != prev && v != -1 {
-			receiver <- v
-		}
-		prev = v
-	}
-}
-
-func PollStopButton(receiver chan<- bool) {
-	prev := false
-	for {
-		time.Sleep(_pollRate)
-		v := GetStop()
-		if v != prev {
-			receiver <- v
-		}
-		prev = v
-	}
-}
-
-func PollObstructionSwitch(receiver chan<- bool) {
-	prev := false
-	for {
-		time.Sleep(_pollRate)
-		v := GetObstruction()
-		if v != prev {
-			receiver <- v
-		}
-		prev = v
-	}
-}
-
-
-
-
 func GetButton(button ButtonType, floor int) bool {
 	a := read([4]byte{6, byte(button), byte(floor), 0})
 	return toBool(a[1])
@@ -154,10 +93,6 @@ func GetObstruction() bool {
 	a := read([4]byte{9, 0, 0, 0})
 	return toBool(a[1])
 }
-
-
-
-
 
 func read(in [4]byte) [4]byte {
 	_mtx.Lock()

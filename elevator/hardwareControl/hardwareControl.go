@@ -4,7 +4,10 @@ import (
 	. "elevator/elevatorConstants"
 	. "elevator/stateTypes"
 	. "elevio"
+	"time"
 )
+
+const pollRate = 20 * time.Millisecond
 
 func HardWareControl(physicalToHardware <-chan PhysicalState, ordersWithConsensusToHardwarech <-chan OrdersWithConsensus) {
 	var prevConsensus OrdersWithConsensus
@@ -63,5 +66,57 @@ func resetLights() {
 		SetButtonLamp(BT_HallDown, floor, false)
 		SetButtonLamp(BT_HallUp, floor, false)
 		SetButtonLamp(BT_Cab, floor, false)
+	}
+}
+
+func PollButtons(receiver chan<- ButtonEvent) {
+	prev := make([][3]bool, NumFloors)
+	for {
+		time.Sleep(pollRate)
+		for f := 0; f < NumFloors; f++ {
+			for b := ButtonType(0); b < 3; b++ {
+				v := GetButton(b, f)
+				if v != prev[f][b] && v != false {
+					receiver <- ButtonEvent{f, ButtonType(b)}
+				}
+				prev[f][b] = v
+			}
+		}
+	}
+}
+
+func PollFloorSensor(receiver chan<- int) {
+	prev := -1
+	for {
+		time.Sleep(pollRate)
+		v := GetFloor()
+		if v != prev && v != -1 {
+			receiver <- v
+		}
+		prev = v
+	}
+}
+
+func PollStopButton(receiver chan<- bool) {
+	prev := false
+	for {
+		time.Sleep(pollRate)
+		v := GetStop()
+		if v != prev {
+			receiver <- v
+		}
+		prev = v
+	}
+}
+
+func PollObstructionSwitch(receiver chan<- bool) {
+	prev := false
+	for {
+		time.Sleep(pollRate)
+		v := GetObstruction()
+		if v != prev {
+			receiver <- v
+		}
+		prev = v
 	}
 }
