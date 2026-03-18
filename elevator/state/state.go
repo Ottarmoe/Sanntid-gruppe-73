@@ -116,7 +116,6 @@ func StateKeeper(
 func initWorldView(id int, initfloor int) ElevWorldView {
 	var wView ElevWorldView
 
-	wView.ID = id
 	for elev := 0; elev < NumElevators; elev++ {
 		wView.NetError[elev] = true
 		wView.CabArchiveSeen[elev] = false

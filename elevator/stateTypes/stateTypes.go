@@ -56,7 +56,6 @@ type ElevState struct { //States to be mirrored to other elevators
 }
 
 type ElevWorldView struct {
-	ID             int
 	ElevStates     [NumElevators]ElevState
 	CabArchiveSeen [NumElevators]bool
 	CabAgreement   [NumElevators][NumFloors]bool
@@ -77,7 +76,6 @@ type NetErrorNotification struct {
 
 // Consensus struct
 type OrdersWithConsensus struct {
-	ID         int
 	HallOrders [NumFloors][2]bool //0 is up, 1 is down, use "direction"
 	CabOrders  [NumElevators][NumFloors]bool
 }

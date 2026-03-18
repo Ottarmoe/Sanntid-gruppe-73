@@ -5,7 +5,7 @@ import (
 	"strconv"
 )
 
-const NumFloors int = 4
+const NumFloors int = 9
 const NumElevators int = 3
 
 const BroadcastRate float64 = 0.02          //Send every x seconds

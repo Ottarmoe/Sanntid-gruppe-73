@@ -1,7 +1,7 @@
 package state
 
 import (
-	//. "elevator/elevatorConstants"
+	. "elevator/elevatorConstants"
 	. "elevator/stateTypes"
 )
 
@@ -10,7 +10,7 @@ func handleFloor(physicalState *PhysicalState, event int) {
 }
 
 func handleMotor(wv *ElevWorldView, event PhysicalState) {
-	elevator := &wv.ElevStates[wv.ID]
+	elevator := &wv.ElevStates[ID()]
 	physics := &elevator.PhysicalState
 
 	physics.Behaviour = event.Behaviour
@@ -18,7 +18,7 @@ func handleMotor(wv *ElevWorldView, event PhysicalState) {
 }
 
 func handleMech(wv *ElevWorldView, event bool) {
-	wv.ElevStates[wv.ID].PhysicalState.MechError = event
+	wv.ElevStates[ID()].PhysicalState.MechError = event
 }
 
 func handleNetworkPhysics(wv *ElevWorldView, netMessage NetMessage) {

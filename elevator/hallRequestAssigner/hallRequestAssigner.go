@@ -51,7 +51,7 @@ func buildHRAInput(orders OrdersWithConsensus, physics [NumElevators]PhysicalSta
 	input.HallRequests = orders.HallOrders[:]
 
 	for elev := 0; elev < NumElevators; elev++ {
-		if !physics[elev].MechError && !netError[elev] || elev == orders.ID {
+		if !physics[elev].MechError && !netError[elev] || elev == ID() {
 			input.States[fmt.Sprintf("%d", elev)] = HRAElevatorState{
 				Behavior:    []string{"idle", "moving", "doorOpen"}[physics[elev].Behaviour],
 				Floor:       physics[elev].Floor,
@@ -86,10 +86,10 @@ func runHRAExecutable(input HRAInput) (map[string][][2]bool, error) {
 func extractHRAOrders(output map[string][][2]bool, orders OrdersWithConsensus) OurOrders {
 	var hallOrders [NumFloors][2]bool
 	for i := range hallOrders {
-		hallOrders[i] = output[fmt.Sprintf("%d", orders.ID)][i]
+		hallOrders[i] = output[fmt.Sprintf("%d", ID())][i]
 	}
 	return OurOrders{
 		HallOrders: hallOrders,
-		CabOrders:  orders.CabOrders[orders.ID],
+		CabOrders:  orders.CabOrders[ID()],
 	}
 }

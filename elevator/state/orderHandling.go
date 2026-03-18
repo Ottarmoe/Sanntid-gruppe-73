@@ -8,7 +8,7 @@ import (
 )
 
 func handleButton(wv *ElevWorldView, event ButtonEvent) {
-	me := &wv.ElevStates[wv.ID]
+	me := &wv.ElevStates[ID()]
 	switch event.Button {
 	case BT_HallUp:
 		//is anyone in HallOPR?
@@ -48,7 +48,6 @@ func handleButton(wv *ElevWorldView, event ButtonEvent) {
 
 func findConsensus(wv ElevWorldView) OrdersWithConsensus {
 	var ordersWithConsensus OrdersWithConsensus
-	ordersWithConsensus.ID = wv.ID
 	for elev := 0; elev < NumElevators; elev++ {
 		for floor := 0; floor < NumFloors; floor++ {
 			ordersWithConsensus.CabOrders[elev][floor] = (wv.ElevStates[elev].OrderState.CabOrders[floor] == CabO)
@@ -64,7 +63,7 @@ func findConsensus(wv ElevWorldView) OrdersWithConsensus {
 		for elev := 0; elev < NumElevators; elev++ {
 			peerHallOrders := &wv.ElevStates[elev].OrderState.HallOrders
 
-			if wv.NetError[elev] == false && wv.ID != elev {
+			if wv.NetError[elev] == false && ID() != elev {
 				anyElevExists = true
 				if peerHallOrders[floor][Down] == HallO {
 					hallDownExists = true
@@ -77,8 +76,8 @@ func findConsensus(wv ElevWorldView) OrdersWithConsensus {
 				}
 			}
 		}
-		HallOrders := &wv.ElevStates[wv.ID].OrderState.HallOrders
-		CabOrders := &wv.ElevStates[wv.ID].OrderState.CabOrders
+		HallOrders := &wv.ElevStates[ID()].OrderState.HallOrders
+		CabOrders := &wv.ElevStates[ID()].OrderState.CabOrders
 
 		if (!anyElevExists || hallDownExists) && (HallOrders[floor][Down] == HallO) {
 			ordersWithConsensus.HallOrders[floor][Down] = true
@@ -91,9 +90,9 @@ func findConsensus(wv ElevWorldView) OrdersWithConsensus {
 			ordersWithConsensus.HallOrders[floor][Up] = false
 		}
 		if (!anyElevExists || cabExists) && (CabOrders[floor] == CabO) {
-			ordersWithConsensus.CabOrders[wv.ID][floor] = true
+			ordersWithConsensus.CabOrders[ID()][floor] = true
 		} else {
-			ordersWithConsensus.CabOrders[wv.ID][floor] = false
+			ordersWithConsensus.CabOrders[ID()][floor] = false
 		}
 	}
 	return ordersWithConsensus
@@ -139,7 +138,7 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	}
 }
 func handleOrderDynamics(wv *ElevWorldView) {
-	elevator := &wv.ElevStates[wv.ID]
+	elevator := &wv.ElevStates[ID()]
 	physics := &elevator.PhysicalState
 
 	//transition to OPR when finishing order
