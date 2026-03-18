@@ -1,43 +1,22 @@
-package elevio
+package hardwareLow
 
-import "sync"
-import "net"
-import "fmt"
-import . "elevator/stateTypes"
+import (
+	"fmt"
+	"net"
+	"sync"
+	. "elevator/stateTypes"
+)
 
 
 var _initialized    bool = false
-var _numFloors      int = 4
 var _mtx            sync.Mutex
 var _conn           net.Conn
 
-type MotorDirection int
-
-const (
-	MD_Up   MotorDirection = 1
-	MD_Down                = -1
-	MD_Stop                = 0
-)
-
-type ButtonType int
-
-const (
-	BT_HallUp   ButtonType = 0
-	BT_HallDown            = 1
-	BT_Cab                 = 2
-)
-
-type ButtonEvent struct {
-	Floor  int
-	Button ButtonType
-}
-
-func Init(addr string, numFloors int) {
+func Init(addr string) {
 	if _initialized {
 		fmt.Println("Driver already initialized!")
 		return
 	}
-	_numFloors = numFloors
 	_mtx = sync.Mutex{}
 	var err error
 	_conn, err = net.Dial("tcp", addr)

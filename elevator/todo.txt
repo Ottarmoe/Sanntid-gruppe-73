@@ -6,6 +6,8 @@ share
 
 ?
 Håndtere netmessage med feil id
+kan noen constants, ev. structs flyttes til akutell modul?
+rename hardwareControl til Hardware, og elevio til hardwareLow
 
 code quality
 - use gofmt

@@ -2,7 +2,7 @@ package state
 
 import (
 	// . "elevator/elevatorConstants"
-	// "elevio"
+	// "hardwareLow"
 	. "elevator/stateTypes"
 	"fmt"
 )

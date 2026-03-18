@@ -2,8 +2,8 @@ package hardwareControl
 
 import (
 	. "elevator/elevatorConstants"
+	. "elevator/hardwareLow"
 	. "elevator/stateTypes"
-	. "elevator/elevio"
 	"time"
 )
 
@@ -77,7 +77,7 @@ func PollButtons(receiver chan<- ButtonEvent) {
 			for b := ButtonType(0); b < 3; b++ {
 				v := GetButton(b, f)
 				if v != prev[f][b] && v != false {
-					receiver <- ButtonEvent{f, ButtonType(b)}
+					receiver <- ButtonEvent{Floor: f, Button: ButtonType(b)}
 				}
 				prev[f][b] = v
 			}

@@ -5,7 +5,6 @@ import (
 	"elevator/hallRequestAssigner"
 	"elevator/referenceGenerator"
 	. "elevator/stateTypes"
-	. "elevator/elevio"
 	"fmt"
 	// "time"
 )

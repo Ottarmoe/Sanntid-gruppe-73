@@ -98,3 +98,40 @@ func PrintPhysicalState(stat PhysicalState) {
 }
 
 //Hardware event types
+type MotorDirection int
+
+const (
+	MD_Up   MotorDirection = 1
+	MD_Down                = -1
+	MD_Stop                = 0
+)
+
+type ButtonType int
+
+const (
+	BT_HallUp   ButtonType = 0
+	BT_HallDown            = 1
+	BT_Cab                 = 2
+)
+
+type ButtonEvent struct {
+	Floor  int
+	Button ButtonType
+}
+
+type EventType int
+
+const (
+    EvButton EventType = iota
+    EvFloor
+    EvStop
+    EvObstruction
+)
+
+type sensorEvent struct {
+    Type        EventType
+    Floor       int
+    Button      ButtonType
+    Stop        bool
+    Obstruction bool
+}
