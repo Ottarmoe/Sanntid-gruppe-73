@@ -28,3 +28,8 @@ testing
 - hadde vært nice å ha en siste test der vi ikke oppdager noen feil før vi leverer
 (ideelt sett teste utdelt netimpair script på laben. 
 Med networkLow versjonen for innlevering og ikke versjonen for WSL)
+
+
+commands
+./SimElevatorServer --port 15657 --numfloors 9
+curl "http://localhost:8080/set_loss?prob=0"
