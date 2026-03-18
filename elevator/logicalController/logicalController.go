@@ -98,7 +98,7 @@ func Controller(
 				expectedTime += 2
 				newDeadLine <- expectedTime
 				// fmt.Print("R ")
-				PrintPhysicalState(ref)
+				// PrintPhysicalState(ref)
 			}
 			doReferenceRequest = false
 		}

@@ -3,7 +3,7 @@ package network
 import (
 	"elevator/networkLow"
 	. "elevator/stateTypes"
-	"fmt"
+	// "fmt"
 	"time"
 
 	. "elevator/elevatorConstants"
@@ -84,8 +84,6 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 				//fmt.Print("c")
 				continue
 			}
-			fmt.Print("unique message")
-			fmt.Println(netMessage)
 
 			netMessageToState <- netMessage
 			prevNetMessages[netMessage.ID] = netMessage
