@@ -129,7 +129,7 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	}
 	//if some elevator is in net error, diffuse their cab archive from this other elevator
 	for elev := 0; elev < NumElevators; elev++ {
-		if wv.NetError[elev] {
+		if wv.NetError[elev] && elev != ID() {
 			for floor := 0; floor < NumFloors; floor++ {
 				if netMessage.CabBackups[elev][floor] == CabO {
 					wv.ElevStates[elev].OrderState.CabOrders[floor] = CabO
