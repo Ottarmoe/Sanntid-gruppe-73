@@ -3,7 +3,7 @@ package hardwareControl
 import (
 	. "elevator/elevatorConstants"
 	. "elevator/stateTypes"
-	. "elevio"
+	. "elevator/elevio"
 	"time"
 )
 

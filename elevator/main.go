@@ -11,8 +11,8 @@ import (
 	"elevator/logicalControl"
 	"elevator/state"
 	. "elevator/stateTypes"
-	"elevio"
-	. "elevio"
+	"elevator/elevio"
+	. "elevator/elevio"
 	"fmt"
 )
 
