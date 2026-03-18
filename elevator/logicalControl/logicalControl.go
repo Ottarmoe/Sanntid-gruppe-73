@@ -2,30 +2,28 @@ package logicalControl
 
 import (
 	. "elevator/elevatorConstants"
-
-	//. "elevator/state"
 	. "elevator/stateTypes"
 	"fmt"
 	"math"
 	"time"
 )
 
-func Controller(
-	referenceCh <-chan PhysicalState,
-	stateUpdateCh <-chan PhysicalState,
-	obstructionCh <-chan bool,
-	referenceRequestOutCh chan<- struct{},
-	physicalStateOutCh chan<- PhysicalState,
+func LogicalController(
+	reference <-chan PhysicalState,
+	stateUpdate <-chan PhysicalState,
+	obstruction <-chan bool,
+	referenceRequestOut chan<- struct{},
+	physicalStateOut chan<- PhysicalState,
 	mechError chan<- bool,
 ) {
-	watchDogGoIdleCh := make(chan struct{})
-	watchDogNewDeadlineCh := make(chan float64)
-	go watchdog(watchDogNewDeadlineCh, watchDogGoIdleCh, mechError)
-	doorClosedEventCh := make(chan struct{})
-	openDoorDurationCh := make(chan float64)
-	go doors(openDoorDurationCh, doorClosedEventCh, obstructionCh)
+	watchDogGoIdle := make(chan struct{})
+	watchDogNewDeadline := make(chan float64)
+	go watchdog(watchDogNewDeadline, watchDogGoIdle, mechError)
+	doorClosedEvent := make(chan struct{})
+	openDoorDuration := make(chan float64)
+	go doors(openDoorDuration, doorClosedEvent, obstruction)
 
-	currentPhysicalState := <-stateUpdateCh
+	currentPhysicalState := <-stateUpdate
 	referenceState := currentPhysicalState
 	initialState := currentPhysicalState
 	doReferenceRequest := true
@@ -36,7 +34,7 @@ func Controller(
 			currentPhysicalState.MovDirection = referenceState.MovDirection
 			if currentPhysicalState.Behaviour != referenceState.Behaviour {
 				if referenceState.Behaviour == DoorOpen {
-					openDoorDurationCh <- DoorOpenDuration
+					openDoorDuration <- DoorOpenDuration
 					currentPhysicalState.Behaviour = DoorOpen
 				} else if referenceState.Behaviour == Idle && currentPhysicalState.Behaviour != DoorOpen {
 					currentPhysicalState.Behaviour = Idle
@@ -44,9 +42,8 @@ func Controller(
 					currentPhysicalState.Behaviour = Moving
 				}
 			}
-		}
-		//if we are not yet on the right floor
-		if referenceState.Floor != currentPhysicalState.Floor {
+			//if we are not yet on the right floor
+		}else{
 			if referenceState.Floor < currentPhysicalState.Floor {
 				currentPhysicalState.MovDirection = Down
 			}
@@ -54,32 +51,31 @@ func Controller(
 				currentPhysicalState.MovDirection = Up
 			}
 			if currentPhysicalState.Behaviour != Moving {
+				currentPhysicalState.Behaviour = Moving
 			}
-			currentPhysicalState.Behaviour = Moving
-
 		}
 		//if anything was changed
 		if initialState != currentPhysicalState {
 			fmt.Print("S ")
 			PrintPhysicalState(referenceState)
-			physicalStateOutCh <- currentPhysicalState
+			physicalStateOut <- currentPhysicalState
 		}
 		if currentPhysicalState == referenceState && doReferenceRequest {
-			referenceRequestOutCh <- struct{}{}
+			referenceRequestOut <- struct{}{}
 			if currentPhysicalState.Behaviour == Idle {
-				watchDogGoIdleCh <- struct{}{}
+				watchDogGoIdle <- struct{}{}
 			}
 		}
 		//wait for any change in state, or the arrival of a new reference
 		initialState = currentPhysicalState
 		doReferenceRequest = true
 		select {
-		case newActual := <-stateUpdateCh:
+		case newActual := <-stateUpdate:
 			newActual.MechError = false //controller always tries to move as if it is fully functional
 			currentPhysicalState.Floor = newActual.Floor
-		case <-doorClosedEventCh:
+		case <-doorClosedEvent:
 			currentPhysicalState.Behaviour = Idle
-		case referenceState = <-referenceCh:
+		case referenceState = <-reference:
 			referenceState.MechError = false
 			if referenceState != currentPhysicalState {
 				expectedTime := 0.
@@ -88,7 +84,7 @@ func Controller(
 					expectedTime += DoorObstructionBuffer //adjust this to adjust sensitivity to obstruction
 				}
 				expectedTime += DeadlineBuffer
-				watchDogNewDeadlineCh <- expectedTime
+				watchDogNewDeadline <- expectedTime
 				fmt.Printf("R ")
 				PrintPhysicalState(referenceState)
 			}
@@ -127,14 +123,14 @@ func doors(holdOpenFor <-chan float64, doorsClosed chan<- struct{}, obstruction 
 	}
 }
 
-func watchdog(deadlineCh <-chan float64, goIdle <-chan struct{}, mechErrorSignal chan<- bool) {
+func watchdog(deadline <-chan float64, goIdle <-chan struct{}, mechErrorSignal chan<- bool) {
 	numTimers := 0
 	burnoutReturn := make(chan struct{})
 	idle := true
 
 	for {
 		select {
-		case deadline := <-deadlineCh:
+		case deadline := <-deadline:
 			go burnoutTimer(deadline, burnoutReturn)
 			if numTimers == 0 {
 				mechErrorSignal <- false

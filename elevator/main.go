@@ -56,7 +56,7 @@ func main() {
 		netMessageToNetworkSender, netMessageToState, netErrorToState,
 		pokeStateCh)
 	go HardWareControl(physicsToHardware, ordersWithConsensusToHardware)
-	go logicalControl.Controller(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
+	go logicalControl.LogicalController(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
 	go NetworkSender(netMessageToNetworkSender, pokeStateCh)
 	go NetworkReceiver(netMessageToState, netErrorToState)
 
