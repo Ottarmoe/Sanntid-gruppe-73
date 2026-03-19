@@ -7,7 +7,7 @@ share
 ?
 Håndtere netmessage med feil id
 kan noen constants, ev. structs flyttes til akutell modul?
-rename hardwareControl til Hardware, og elevio til hardwareLow
+Istedenfor pokestate, kan vi ha en watchdog for statekeeper, som har en killGoRoutinechannel?
 
 code quality
 - use gofmt
@@ -23,10 +23,6 @@ refleksjon
 -gjøre det veldig klart hva state, orderHandling og physicsHandling faktisk gjør. 
 vi håndterer en netmessage med både handleNetworkOrders() og handleNetworkPhysics()
 og disse ligger i hver sin fil. Mulig dette er stygt?
-
-imports/libraries 
--trenger elevio å være en egen modul/ha en god.mod fil?
--importere elevio færrest mulig steder
 
 testing
 - find some way to test the hall order state mechine
