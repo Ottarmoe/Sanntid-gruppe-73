@@ -119,19 +119,26 @@ type ButtonEvent struct {
 	Button ButtonType
 }
 
-type EventType int
+//helper functions
+func (wv *ElevWorldView) IsOnline(elev int) bool {
+    return !wv.NetError[elev] || elev == ID()
+}
 
-const (
-    EvButton EventType = iota
-    EvFloor
-    EvStop
-    EvObstruction
-)
+func (wv *ElevWorldView) GetHallOrder(elev int, floor int, dir Direction) HallOrderState {
+    return wv.ElevStates[elev].OrderState.HallOrders[floor][dir]
+}
 
-type sensorEvent struct {
-    Type        EventType
-    Floor       int
-    Button      ButtonType
-    Stop        bool
-    Obstruction bool
+func (wv *ElevWorldView) MyState() *ElevState {
+    return &wv.ElevStates[ID()]
+}
+
+func (wv *ElevWorldView) AnyoneInHallOPR(floor int, dir Direction) bool {
+    for elev := 0; elev < NumElevators; elev++ {
+        if wv.IsOnline(elev) {
+            if wv.GetHallOrder(elev, floor, dir) == HallOPR {
+                return true
+            }
+        }
+    }
+    return false
 }

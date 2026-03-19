@@ -7,39 +7,23 @@ import (
 )
 
 func handleButton(wv *ElevWorldView, event ButtonEvent) {
-	me := &wv.ElevStates[ID()]
+	me := wv.MyState()
+	floor := event.Floor
+
 	switch event.Button {
 	case BT_HallUp:
-		//is anyone in HallOPR?
-		readyToTransition := true
-		for elev := 0; elev < NumElevators; elev++ {
-			if !wv.NetError[elev] || elev == ID() {
-				if wv.ElevStates[elev].OrderState.HallOrders[event.Floor][Up] == HallOPR {
-					readyToTransition = false
-				}
-			}
-		}
-		if readyToTransition {
-			me.OrderState.HallOrders[event.Floor][Up] = HallO
-		}
+		if !wv.AnyoneInHallOPR(floor, Up) {
+            me.OrderState.HallOrders[floor][Up] = HallO
+        }
 	case BT_HallDown:
-		//is anyone in HallOPR?
-		readyToTransition := true
-		for elev := 0; elev < NumElevators; elev++ {
-			if !wv.NetError[elev] || elev == ID() {
-				if wv.ElevStates[elev].OrderState.HallOrders[event.Floor][Down] == HallOPR {
-					readyToTransition = false
-				}
-			}
-		}
-		if readyToTransition {
-			me.OrderState.HallOrders[event.Floor][Down] = HallO
-		}
+		if !wv.AnyoneInHallOPR(floor, Down) {
+            me.OrderState.HallOrders[floor][Down] = HallO
+        }
 	case BT_Cab:
-		if me.OrderState.CabOrders[event.Floor] != CabO {
-			me.OrderState.CabOrders[event.Floor] = CabO
+		if me.OrderState.CabOrders[floor] != CabO {
+			me.OrderState.CabOrders[floor] = CabO
 			for elev := 0; elev < NumElevators; elev++ {
-				wv.CabAgreement[elev][event.Floor] = false
+				wv.CabAgreement[elev][floor] = false
 			}
 		}
 	}
@@ -98,6 +82,8 @@ func findConsensus(wv ElevWorldView) OrdersWithConsensus {
 }
 
 func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
+	me := wv.MyState()
+	
 	wv.ElevStates[netMessage.ID].OrderState.HallOrders = netMessage.ElevState.OrderState.HallOrders
 
 	//atchive their cab state
@@ -108,7 +94,7 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	}
 	//check if their archive is up to date
 	for floor := 0; floor < NumFloors; floor++ {
-		if netMessage.CabBackups[ID()][floor] == wv.ElevStates[ID()].OrderState.CabOrders[floor] {
+		if netMessage.CabBackups[ID()][floor] == me.OrderState.CabOrders[floor] {
 			wv.CabAgreement[netMessage.ID][floor] = true
 		} else {
 			wv.CabAgreement[netMessage.ID][floor] = false
@@ -117,9 +103,9 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	//if that elevator not yet seen, integrate their archive
 	if !wv.CabArchiveSeen[netMessage.ID] {
 		for floor := 0; floor < NumFloors; floor++ {
-			if wv.ElevStates[ID()].OrderState.CabOrders[floor] == CabUO {
+			if me.OrderState.CabOrders[floor] == CabUO {
 				if netMessage.CabBackups[ID()][floor] == CabO {
-					wv.ElevStates[ID()].OrderState.CabOrders[floor] = CabO
+					me.OrderState.CabOrders[floor] = CabO
 				}
 			}
 		}

@@ -47,7 +47,7 @@ func main() {
 	go hardwareControl.PollObstructionSwitch(sense_obstr)
 	go hardwareControl.PollStopButton(sense_stop)
 
-	go state.StateKeeper(ID(), startfloor,
+	go state.StateKeeper(startfloor,
 		sense_buttons, sense_floor, int_mot, int_mech,
 		ordersWithConsensusToHardware, physicsToHardware,
 		stat_to_controller, ref_request, ref_to_controller,

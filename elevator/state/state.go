@@ -15,7 +15,6 @@ func PrintSomething() {
 
 // obstruction is not considered a state, and is handled internally by the door system
 func StateKeeper(
-	id int,
 	initfloor int,
 	buttonClick <-chan ButtonEvent,
 	floorReached <-chan int,
@@ -35,45 +34,39 @@ func StateKeeper(
 
 	poke <-chan struct{},
 ) {
-	var wView ElevWorldView = initWorldView(id, initfloor)
-	me := &wView.ElevStates[id]
-	physicalState := &me.PhysicalState
-	stateToController <- *physicalState
+	var wv ElevWorldView = initWorldView(initfloor)
+	me := wv.MyState()
+
+	stateToController <- me.PhysicalState
+
 	var lastRef PhysicalState
 	lastRef.Floor = -999
 
-	// last := time.Now() //For debugging
-
 	for {
-		// PrintElevState(*me)
 		stateChanged := true
 		select {
 		case buttonEvent := <-buttonClick:
-			handleButton(&wView, buttonEvent)
+			handleButton(&wv, buttonEvent)
 		case floorEvent := <-floorReached:
-			//fmt.Print("floor update", floorEvent, "\n")
-			handleFloor(physicalState, floorEvent)
+			handleFloor(&wv, floorEvent)
 		case motorEvent := <-motor:
-			//fmt.Print("motor update", motorEvent, "\n")
-			handleMotor(&wView, motorEvent)
+			handleMotor(&wv, motorEvent)
 		case mechEvent := <-mechError:
 			fmt.Println("mech error", mechEvent)
-			handleMech(&wView, mechEvent)
+			handleMech(&wv, mechEvent)
 		case netMessage := <-netMessageToState:
-			// PrintNetMessage(netMessage)
-			handleNetworkOrders(&wView, netMessage)
-			handleNetworkPhysics(&wView, netMessage)
-			//fmt.Print("n")
+			handleNetworkOrders(&wv, netMessage)
+			handleNetworkPhysics(&wv, netMessage)
 		case netErrorNotification := <-netErrorToState: //burde dette caset og det over synkroniseres?
-			wView.NetError[netErrorNotification.ID] = netErrorNotification.NetError
-			fmt.Println("NetError:", wView.NetError)
+			wv.NetError[netErrorNotification.ID] = netErrorNotification.NetError
+			fmt.Println("NetError:", wv.NetError)
 		case _ = <-referenceRequest:
 			var physics [NumElevators]PhysicalState
 			for elev := 0; elev < NumElevators; elev++ {
-				physics[elev] = wView.ElevStates[elev].PhysicalState
+				physics[elev] = wv.ElevStates[elev].PhysicalState
 			}
-			ordersWithConsensus := findConsensus(wView)
-			relevantOrders := hallRequestAssigner.HRA(ordersWithConsensus, physics, wView.NetError)
+			ordersWithConsensus := findConsensus(wv)
+			relevantOrders := hallRequestAssigner.HRA(ordersWithConsensus, physics, wv.NetError)
 			ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
 			_ = ref
 			//fmt.Println("sending ref to controller")
@@ -85,51 +78,51 @@ func StateKeeper(
 		case <-poke:
 			stateChanged = false
 		}
-		handleOrderDynamics(&wView)
+		handleOrderDynamics(&wv)
 
 		if stateChanged {
 			//Update hardware
-			ordersWithConsensus := findConsensus(wView)
+			ordersWithConsensus := findConsensus(wv)
 			//fmt.Println("sending to hardware")
 			ordersWithConsensusToHardware <- ordersWithConsensus
-			physicsToHardware <- *physicalState
+			physicsToHardware <- me.PhysicalState
 
 			//New state info to network
 			var cabBackups [NumElevators][NumFloors]CabOrderState
 			for elev := 0; elev < NumElevators; elev++ {
-				cabBackups[elev] = wView.ElevStates[elev].OrderState.CabOrders
+				cabBackups[elev] = wv.ElevStates[elev].OrderState.CabOrders
 			}
 			netMessage := NetMessage{
-				ID:         id,
+				ID:         ID(),
 				ElevState:  *me,
 				CabBackups: cabBackups,
 			}
 			//fmt.Println("sending to net")
 			netMessageToNetworkSender <- netMessage
 			//fmt.Println("sending to conntroller")
-			stateToController <- *physicalState
+			stateToController <- me.PhysicalState
 		}
 	}
 }
 
-func initWorldView(id int, initfloor int) ElevWorldView {
-	var wView ElevWorldView
+func initWorldView(initfloor int) ElevWorldView {
+	var wv ElevWorldView
 
 	for elev := 0; elev < NumElevators; elev++ {
-		wView.NetError[elev] = true
-		wView.CabArchiveSeen[elev] = false
+		wv.NetError[elev] = true
+		wv.CabArchiveSeen[elev] = false
 
 		for floor := 0; floor < NumFloors; floor++ {
-			wView.ElevStates[elev].OrderState.HallOrders[floor][Down] = HallNO
-			wView.ElevStates[elev].OrderState.HallOrders[floor][Up] = HallNO
-			wView.ElevStates[elev].OrderState.CabOrders[floor] = CabUO
+			wv.ElevStates[elev].OrderState.HallOrders[floor][Down] = HallNO
+			wv.ElevStates[elev].OrderState.HallOrders[floor][Up] = HallNO
+			wv.ElevStates[elev].OrderState.CabOrders[floor] = CabUO
 		}
 	}
 
-	me := &wView.ElevStates[id]
+	me := wv.MyState()
 	me.PhysicalState.MechError = false
 	me.PhysicalState.Behaviour = Idle
 	me.PhysicalState.Floor = initfloor
 
-	return wView
+	return wv
 }
