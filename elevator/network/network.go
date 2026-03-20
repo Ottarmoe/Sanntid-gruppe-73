@@ -1,17 +1,17 @@
 package network
 
 import (
+	. "elevator/elevatorConstants"
 	"elevator/networkLow"
 	. "elevator/stateTypes"
-	. "elevator/elevatorConstants"
-	"time"
 	"encoding/json"
 	"log"
+	"time"
 )
 
-//Stores a network message, which contains the newest state information. 
-//The routine periodically broadcasts the stored message on the network. 
-func NetworkSender(netMessageToNetworkSender <-chan NetMessage, pokeState chan<- struct{}) {
+// Stores a network message, which contains the newest state information.
+// The routine periodically broadcasts the stored message on the network.
+func NetworkSender(netMessageToNetworkSender <-chan NetMessage) {
 	timeToSend := time.NewTicker(time.Duration(BroadcastRate * float64(time.Second)))
 
 	//No periodic sending before the first netmessage has been comunnicated by state
@@ -23,7 +23,6 @@ func NetworkSender(netMessageToNetworkSender <-chan NetMessage, pokeState chan<-
 			//Store newest netMessage
 
 		case <-timeToSend.C:
-			pokeState <- struct{}{}
 			data, err := json.Marshal(netMessage)
 			if err != nil {
 				log.Println("Send json marshal error:", err)
@@ -37,11 +36,10 @@ func NetworkSender(netMessageToNetworkSender <-chan NetMessage, pokeState chan<-
 	}
 }
 
-
-//Receives network messages, filters out duplicate messages and tracks how often
-//a message is received from each elevator. If no message is received within a given interval,
-//the elevator is marked as neterror. To remove neterror, a certain number of messages must be received
-//during an interval, for x intervals in a row. Unique netmessages and neterror-change is sent to state.
+// Receives network messages, filters out duplicate messages and tracks how often
+// a message is received from each elevator. If no message is received within a given interval,
+// the elevator is marked as neterror. To remove neterror, a certain number of messages must be received
+// during an interval, for x intervals in a row. Unique netmessages and neterror-change is sent to state.
 func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<- NetErrorNotification) {
 	var prevNetMessages [NumElevators]NetMessage
 
@@ -57,7 +55,7 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 		ReceivedDuringInterval[i] = 0
 		ReceivedIntervals[i] = 0
 	}
-	
+
 	// Start a timeout notifier for each other elevator
 	timeout := make(chan int)
 	var resetTimer [NumElevators]chan struct{}
@@ -106,7 +104,7 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 				NetError[id] = true
 				netErrorToState <- NetErrorNotification{ID: id, NetError: true}
 			}
-			//Timout during "get back online phase" means start from scratch. 
+			//Timout during "get back online phase" means start from scratch.
 			//Timout while online should also reset the timer.
 			ReceivedDuringInterval[id] = 0
 			ReceivedIntervals[id] = 0
@@ -115,9 +113,9 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 	}
 }
 
-//Monitors a timer for a specific elevator, and notifies
-//the NetworkReceiver when the timer expires, and for which elevator it expired.
-//The timer can be reset using the resetTimer channel.
+// Monitors a timer for a specific elevator, and notifies
+// the NetworkReceiver when the timer expires, and for which elevator it expired.
+// The timer can be reset using the resetTimer channel.
 func timeoutNotifier(id int, timeout chan int, resetTimer chan struct{}) {
 	timer := time.NewTimer(time.Duration(NetErrorTimerLength * float64(time.Second)))
 	for {
@@ -131,9 +129,9 @@ func timeoutNotifier(id int, timeout chan int, resetTimer chan struct{}) {
 	}
 }
 
-//Reads raw data from the network, decodes it into netMessage structs, 
-//and forwards valid messages to NetworkReceiver.
-//Filters out messeages from this elevator.
+// Reads raw data from the network, decodes it into netMessage structs,
+// and forwards valid messages to NetworkReceiver.
+// Filters out messeages from this elevator.
 func receiver(receiveMessage chan<- NetMessage) {
 	for {
 		data, err := networkLow.Receive()

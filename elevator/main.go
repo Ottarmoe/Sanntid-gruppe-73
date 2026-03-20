@@ -12,6 +12,7 @@ import (
 	"elevator/state"
 	. "elevator/stateTypes"
 	"fmt"
+	"time"
 )
 
 func main() {
@@ -35,7 +36,7 @@ func main() {
 	netMessageToNetworkSender := make(chan NetMessage, 10)
 	netMessageToState := make(chan NetMessage)
 	netErrorToState := make(chan NetErrorNotification)
-	pokeStateCh := make(chan struct{})
+	stillAliveCh := make(chan struct{})
 
 	ordersWithConsensusToHardware := make(chan OrdersWithConsensus)
 	physicsToHardware := make(chan PhysicalState)
@@ -52,13 +53,13 @@ func main() {
 		ordersWithConsensusToHardware, physicsToHardware,
 		stat_to_controller, ref_request, ref_to_controller,
 		netMessageToNetworkSender, netMessageToState, netErrorToState,
-		pokeStateCh)
+		stillAliveCh)
 	go hardwareControl.HardWareControl(physicsToHardware, ordersWithConsensusToHardware)
 	go logicalControl.LogicalController(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
-	go NetworkSender(netMessageToNetworkSender, pokeStateCh)
+	go NetworkSender(netMessageToNetworkSender)
 	go NetworkReceiver(netMessageToState, netErrorToState)
 
-	select {}
+	suicideWatchDog(stillAliveCh)
 }
 
 func PhysicalInit() int {
@@ -71,4 +72,16 @@ func PhysicalInit() int {
 
 	SetMotorDirection(MD_Stop)
 	return GetFloor()
+}
+
+func suicideWatchDog(stillAliveCh <-chan struct{}) {
+	deathTimer := time.NewTimer(DeathCountDown)
+	for {
+		select {
+		case <-deathTimer.C:
+			panic("state timed out")
+		case <-stillAliveCh:
+			deathTimer = time.NewTimer(DeathCountDown)
+		}
+	}
 }
