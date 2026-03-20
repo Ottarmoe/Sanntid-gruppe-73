@@ -18,7 +18,7 @@ const BroadcastRate time.Duration = time.Millisecond * 20
 const NetErrorTimerLength time.Duration = time.Second * 1 //Need 0 messages within NetErrorTimerLength to mark as netError
 const MessagesNeededWithinInterval int = 10               //Need MessagesNeededWithinInterval messages within NetErrorTimerLength to get peer back online
 const IntervalsNeeded int = 3                             //Need IntervalsNeeded intervals with enough messages to get peer back online
-const CommunicationPort int = 30073
+const CommunicationPort int = 30173
 
 // logicalControl
 const DoorOpenDuration time.Duration = time.Second * 3        //Seconds to hold door open when we arrive at a floor
