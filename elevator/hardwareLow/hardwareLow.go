@@ -21,12 +21,7 @@ var _mtx sync.Mutex
 var _conn net.Conn
 
 func Init() {
-	var serverAdress string
-	if UsingSimulator() {
-		serverAdress = fmt.Sprintf("localhost:%d", 15657+MyID())
-	} else {
-		serverAdress = fmt.Sprintf("localhost:%d", 15657)
-	}
+	serverAdress := fmt.Sprintf("localhost:%d", 15657)
 
 	if _initialized {
 		fmt.Println("Driver already initialized!")

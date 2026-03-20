@@ -27,13 +27,10 @@ const DeadlineBuffer time.Duration = time.Second * 2          // General buffer 
 const SecondsPerFloor time.Duration = time.Second * 6         // Estimated travel time between adjacent floors
 const PostObstructionOpenTime time.Duration = time.Second * 1 //amount of time to wait before closing if obstruction released after a long duration
 
-// Elevator specific configuration, personal id and if it should run on a simulator
+// Elevator specific configuration
 var elevatorID int
-var usingSimulator bool
-
 func ConstantsInit() {
 	flag.IntVar(&elevatorID, "id", 0, "ID of this elevator")
-	flag.BoolVar(&usingSimulator, "sim", false, "Run in simulation mode (true/false)")
 
 	flag.Parse()
 
@@ -46,6 +43,4 @@ func ConstantsInit() {
 func MyID() int {
 	return elevatorID
 }
-func UsingSimulator() bool {
-	return usingSimulator
-}
+
