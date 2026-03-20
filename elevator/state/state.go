@@ -4,7 +4,7 @@ import (
 	. "elevator/elevatorConstants"
 	"elevator/hallRequestAssigner"
 	"elevator/referenceGenerator"
-	. "elevator/stateTypes"
+	. "elevator/sharedTypes"
 	"fmt"
 	"time"
 )
@@ -74,16 +74,19 @@ func StateKeeper(
 			fmt.Println("NetError:", wv.NetError)
 
 		case <-referenceRequestCh:
+			//generate reference
 			ordersWithConsensus := findConsensus(&wv)
 			relevantOrders := hallRequestAssigner.HRA(ordersWithConsensus, compilePhysicalStates(&wv), wv.NetError)
 			ref := referenceGenerator.ReferenceGenerator(wv.MyElev().PhysicalState, relevantOrders)
-			//avoid repeat references
+			//send if not a repeat
 			if lastRef != ref {
 				refToControllerCh <- ref
 			}
 			lastRef = ref
 			shouldShareNewState = false
 		}
+		//detect the conditions that cause an order to be cervised
+		//and handle the dynamics of the orders altered by handleNetworkOrders
 		handleOrderDynamics(&wv)
 		stillAliveCh <- struct{}{}
 
@@ -114,10 +117,9 @@ func initWorldView(initfloor int) ElevWorldView {
 		}
 	}
 
-	me := wv.MyElev()
-	me.PhysicalState.MechError = false
-	me.PhysicalState.Behaviour = Idle
-	me.PhysicalState.Floor = initfloor
+	wv.MyElev().PhysicalState.MechError = false
+	wv.MyElev().PhysicalState.Behaviour = Idle
+	wv.MyElev().PhysicalState.Floor = initfloor
 
 	return wv
 }

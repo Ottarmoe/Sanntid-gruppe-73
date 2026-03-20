@@ -2,25 +2,25 @@ package state
 
 import (
 	. "elevator/elevatorConstants"
-	. "elevator/stateTypes"
+	. "elevator/sharedTypes"
 )
 
 func handleButtonEvent(wv *ElevWorldView, event ButtonEvent) {
-	me := wv.MyElev()
 	floor := event.Floor
 
+	//only permit an order to be registered if there is no longer HallOPR on the network
 	switch event.Button {
 	case ButtonHallUp:
 		if !wv.AnyoneInHallOrderState(HallOPR, floor, Up) {
-			me.OrderState.HallOrders[floor][Up] = HallO
+			wv.MyElev().OrderState.HallOrders[floor][Up] = HallO
 		}
 	case ButtonHallDown:
 		if !wv.AnyoneInHallOrderState(HallOPR, floor, Down) {
-			me.OrderState.HallOrders[floor][Down] = HallO
+			wv.MyElev().OrderState.HallOrders[floor][Down] = HallO
 		}
 	case ButtonCab:
-		if me.OrderState.CabOrders[floor] != CabO {
-			me.OrderState.CabOrders[floor] = CabO
+		if wv.MyElev().OrderState.CabOrders[floor] != CabO {
+			wv.MyElev().OrderState.CabOrders[floor] = CabO
 			for elev := 0; elev < NumElevators; elev++ {
 				wv.CabAgreement[elev][floor] = false
 			}
@@ -41,18 +41,24 @@ func findConsensus(wv *ElevWorldView) OrdersWithConsensus {
 	for floor := 0; floor < NumFloors; floor++ {
 		//hall orders
 		for _, dir := range []Direction{Up, Down} {
+			//Registering our HallO state as a consensus is allowed if either:
+			//we are the only elevator
 			if !wv.AnyPeerExists() {
 				if wv.MyElev().OrderState.HallOrders[floor][dir] == HallO {
 					ordersWithConsensus.HallOrders[floor][dir] = true
 				}
+				//or there is some other elevator that agrees we are in HallO, and none that believe we are in HallOPR
 			} else if !wv.AnyoneInHallOrderState(HallOPR, floor, dir) &&
 				wv.AnyoneElseInHallOrderState(HallO, floor, dir) {
-				ordersWithConsensus.HallOrders[floor][dir] = true
+				if wv.MyElev().OrderState.HallOrders[floor][dir] == HallO {
+					ordersWithConsensus.HallOrders[floor][dir] = true
+				}
 			} else {
 				ordersWithConsensus.HallOrders[floor][dir] = false
 			}
 		}
-		//negate cab order if not archived
+		//cab orders
+		//our cab orders are negated if they are not archived
 		if wv.AnyPeerExists() && !wv.CabOrderArchiveExists(floor) {
 			ordersWithConsensus.CabOrders[MyID()][floor] = false
 		}
@@ -60,6 +66,7 @@ func findConsensus(wv *ElevWorldView) OrdersWithConsensus {
 	return ordersWithConsensus
 }
 
+// called when a new network message is recieved
 func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	wv.ElevStates[netMessage.ID].OrderState.HallOrders = netMessage.ElevState.OrderState.HallOrders
 
@@ -124,6 +131,7 @@ func handleOrderDynamics(wv *ElevWorldView) {
 	}
 }
 
+// dynamics of the HallOrder state machine. See rapport
 func orderDiffusion(wv *ElevWorldView, floor int, dir Direction) {
 	switch wv.MyElev().OrderState.HallOrders[floor][dir] {
 	case HallO:

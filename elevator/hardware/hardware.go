@@ -3,14 +3,14 @@ package hardware
 import (
 	. "elevator/elevatorConstants"
 	. "elevator/hardwareLow"
-	. "elevator/stateTypes"
+	. "elevator/sharedTypes"
 	"time"
 )
 
 const pollRate = 20 * time.Millisecond
 
 // Listens for changes in physical state or button lights communicated by statekeeper,
-// and cotrols hardware to make sure that the physical world reflects the worldview.
+// and controls hardware to make sure that the physical world reflects the worldview.
 func HardwareOut(physicalToHardwareCh <-chan PhysicalState, ordersWithConsensusToHardwareCh <-chan OrdersWithConsensus) {
 	var prevConsensus OrdersWithConsensus
 	resetLights()

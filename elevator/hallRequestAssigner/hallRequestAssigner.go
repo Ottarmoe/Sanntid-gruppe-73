@@ -1,11 +1,11 @@
 package hallRequestAssigner
 
 import (
+	. "elevator/elevatorConstants"
+	. "elevator/sharedTypes"
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	. "elevator/elevatorConstants"
-	. "elevator/stateTypes"
 )
 
 // Struct members must be public in order to be accessible by json.Marshal/.Unmarshal
@@ -22,7 +22,7 @@ type HRAInput struct {
 	States       map[string]HRAElevatorState `json:"states"`
 }
 
-func HRA(orders OrdersWithConsensus, physicalStates [NumElevators]PhysicalState, netError [NumElevators]bool) AssignedOrders {
+func HRA(orders OrdersWithConsensus, physicalStates [NumElevators]PhysicalState, netError [NumElevators]bool) ActionableOrders {
 	//sanitize input
 	for elev := 0; elev < NumElevators; elev++ {
 		if physicalStates[elev].Floor == 0 {
@@ -37,7 +37,7 @@ func HRA(orders OrdersWithConsensus, physicalStates [NumElevators]PhysicalState,
 	output, err := runHRAExecutable(input)
 	if err != nil {
 		fmt.Println("HRA error: ", err)
-		return AssignedOrders{}
+		return ActionableOrders{}
 	}
 	return extractHRAOrders(output, orders)
 }
@@ -82,12 +82,12 @@ func runHRAExecutable(input HRAInput) (map[string][][2]bool, error) {
 }
 
 // extractHRAOrders picks this elevator's assigned hall orders from the assigner output and combines with cab orders.
-func extractHRAOrders(output map[string][][2]bool, orders OrdersWithConsensus) AssignedOrders {
+func extractHRAOrders(output map[string][][2]bool, orders OrdersWithConsensus) ActionableOrders {
 	var hallOrders [NumFloors][2]bool
 	for i := range hallOrders {
 		hallOrders[i] = output[fmt.Sprintf("%d", MyID())][i]
 	}
-	return AssignedOrders{
+	return ActionableOrders{
 		HallOrders: hallOrders,
 		CabOrders:  orders.CabOrders[MyID()],
 	}

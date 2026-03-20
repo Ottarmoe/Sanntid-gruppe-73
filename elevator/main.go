@@ -9,8 +9,8 @@ import (
 	"elevator/hardwareLow"
 	. "elevator/hardwareLow"
 	"elevator/logicalControl"
+	. "elevator/sharedTypes"
 	"elevator/state"
-	. "elevator/stateTypes"
 	"time"
 )
 
@@ -24,7 +24,7 @@ func main() {
 	senseButtonsCh := make(chan ButtonEvent)
 	senseFloorCh := make(chan int)
 	senseObstructionCh := make(chan bool)
-	
+
 	motorStateCh := make(chan PhysicalState, 10)
 	mechErrorCh := make(chan bool)
 

@@ -2,7 +2,7 @@ package state
 
 import (
 	. "elevator/elevatorConstants"
-	. "elevator/stateTypes"
+	. "elevator/sharedTypes"
 )
 
 func handleFloorEvent(wv *ElevWorldView, event int) {

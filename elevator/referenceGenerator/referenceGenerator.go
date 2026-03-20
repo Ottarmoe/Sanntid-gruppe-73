@@ -2,10 +2,12 @@ package referenceGenerator
 
 import (
 	. "elevator/elevatorConstants"
-	. "elevator/stateTypes"
+	. "elevator/sharedTypes"
 )
 
-func ReferenceGenerator(myPhysicalState PhysicalState, myOrders AssignedOrders) PhysicalState {
+// Function called on orders assigned by hallRequestAssigner
+// to generate a reference next state for the logicalController to steer toward
+func ReferenceGenerator(myPhysicalState PhysicalState, myOrders ActionableOrders) PhysicalState {
 	CurrentFloor := myPhysicalState.Floor
 	CurrentDirection := myPhysicalState.MovDirection
 
@@ -80,32 +82,32 @@ func oppositeDirection(direction Direction) Direction {
 	return Up
 }
 
-func orderOnCurrentFloorInSameDirection(me PhysicalState, orders AssignedOrders) bool {
-	floor := me.Floor
-	direction := me.MovDirection
+func orderOnCurrentFloorInSameDirection(myPhysicalState PhysicalState, orders ActionableOrders) bool {
+	floor := myPhysicalState.Floor
+	direction := myPhysicalState.MovDirection
 	hallOrders := orders.HallOrders
 	cabOrders := orders.CabOrders
 
 	return hallOrders[floor][direction] || cabOrders[floor]
 }
 
-func orderOnCurrentFloorInOppositeDirection(me PhysicalState, orders AssignedOrders) bool {
-	floor := me.Floor
-	direction := oppositeDirection(me.MovDirection)
+func orderOnCurrentFloorInOppositeDirection(myPhysicalState PhysicalState, orders ActionableOrders) bool {
+	floor := myPhysicalState.Floor
+	direction := oppositeDirection(myPhysicalState.MovDirection)
 	hallOrders := orders.HallOrders
 
 	return hallOrders[floor][direction]
 }
 
-func orderInSameDirection(me PhysicalState, orders AssignedOrders) bool {
-	return orderInDirection(me.Floor, me.MovDirection, orders)
+func orderInSameDirection(myPhysicalState PhysicalState, orders ActionableOrders) bool {
+	return orderInDirection(myPhysicalState.Floor, myPhysicalState.MovDirection, orders)
 }
 
-func orderInOppositeDirection(me PhysicalState, orders AssignedOrders) bool {
-	return orderInDirection(me.Floor, oppositeDirection(me.MovDirection), orders)
+func orderInOppositeDirection(myPhysicalState PhysicalState, orders ActionableOrders) bool {
+	return orderInDirection(myPhysicalState.Floor, oppositeDirection(myPhysicalState.MovDirection), orders)
 }
 
-func orderInDirection(currentfloor int, direction Direction, orders AssignedOrders) bool {
+func orderInDirection(currentfloor int, direction Direction, orders ActionableOrders) bool {
 	hallOrders := orders.HallOrders
 	cabOrders := orders.CabOrders
 	increment := directionToIncrement(direction)
@@ -118,9 +120,9 @@ func orderInDirection(currentfloor int, direction Direction, orders AssignedOrde
 	return false
 }
 
-func shouldIStopOnNextFloor(me PhysicalState, orders AssignedOrders) bool {
-	direction := me.MovDirection
-	nextFloor := me.Floor + directionToIncrement(direction)
+func shouldIStopOnNextFloor(myPhysicalState PhysicalState, orders ActionableOrders) bool {
+	direction := myPhysicalState.MovDirection
+	nextFloor := myPhysicalState.Floor + directionToIncrement(direction)
 
 	if nextFloor < 0 || nextFloor >= NumFloors {
 		return true
@@ -137,5 +139,5 @@ func shouldIStopOnNextFloor(me PhysicalState, orders AssignedOrders) bool {
 	}
 	// Stop for opposite-direction order only if there are no orders beyond next floor
 	return hallOrders[nextFloor][oppositeDirection(direction)] &&
-		!orderInDirection(nextFloor, me.MovDirection, orders)
+		!orderInDirection(nextFloor, myPhysicalState.MovDirection, orders)
 }

@@ -1,10 +1,11 @@
-package stateTypes
+package sharedTypes
 
 import (
 	. "elevator/elevatorConstants"
 )
 
 // Types
+
 type HallOrderState int
 
 const (
@@ -23,6 +24,7 @@ const (
 
 type Direction int
 
+// made to match the definitions in the provided hallRequestAssigner
 const (
 	Up Direction = iota
 	Down
@@ -37,6 +39,7 @@ const (
 )
 
 // Building the world view struct
+
 type PhysicalState struct {
 	Behaviour    MotorBehaviour
 	MovDirection Direction
@@ -56,16 +59,16 @@ type ElevState struct { //States to be mirrored to other elevators
 
 type ElevWorldView struct {
 	ElevStates     [NumElevators]ElevState
-	CabArchiveSeen [NumElevators]bool
-	CabAgreement   [NumElevators][NumFloors]bool
-	NetError       [NumElevators]bool
+	CabArchiveSeen [NumElevators]bool            //for each elevator, can its archive of our cab orders contain information from before our startup?
+	CabAgreement   [NumElevators][NumFloors]bool //for each elevator for each cab order, is this elevators archive of our cab order up to date?
+	NetError       [NumElevators]bool            //for each elevator, can we communicate with it?
 }
 
 // Network
 type NetMessage struct {
 	ID         int
 	ElevState  ElevState
-	CabBackups [NumElevators][NumFloors]CabOrderState //not needed by other elevators most of the time
+	CabBackups [NumElevators][NumFloors]CabOrderState //mostly checked against our Cab order states for generating CabAgreement in ElevWorldView
 }
 
 type NetErrorNotification struct {
@@ -73,25 +76,19 @@ type NetErrorNotification struct {
 	NetError bool
 }
 
-// Structs that represent purely if an order exists or not
+// representing the order state of all elevators flattened into booleans
 type OrdersWithConsensus struct {
-	HallOrders [NumFloors][2]bool 
+	HallOrders [NumFloors][2]bool
 	CabOrders  [NumElevators][NumFloors]bool
 }
 
-type AssignedOrders struct {
-	HallOrders [NumFloors][2]bool 
+// representing the orders that can be acted upon by a single elevator (only one copy of CabOrders)
+type ActionableOrders struct {
+	HallOrders [NumFloors][2]bool
 	CabOrders  [NumFloors]bool
 }
 
 // Hardware event types
-type MotorDirection int
-
-const (
-	MotorDirUp   MotorDirection = 1
-	MotorDirDown                = -1
-	MotorDirStop                = 0
-)
 
 type ButtonType int
 
@@ -106,7 +103,7 @@ type ButtonEvent struct {
 	Button ButtonType
 }
 
-// helper functions
+// helper functions for ElevWorldView
 func (wv *ElevWorldView) IsOnline(elev int) bool {
 	return !wv.NetError[elev] || elev == MyID()
 }

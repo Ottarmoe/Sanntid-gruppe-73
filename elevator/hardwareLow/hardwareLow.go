@@ -1,23 +1,30 @@
 package hardwareLow
 
 import (
+	. "elevator/elevatorConstants"
+	. "elevator/sharedTypes"
 	"fmt"
 	"net"
 	"sync"
-	. "elevator/stateTypes"
-	. "elevator/elevatorConstants"
 )
 
+type MotorDirection int
 
-var _initialized    bool = false
-var _mtx            sync.Mutex
-var _conn           net.Conn
+const (
+	MotorDirUp   MotorDirection = 1
+	MotorDirDown                = -1
+	MotorDirStop                = 0
+)
+
+var _initialized bool = false
+var _mtx sync.Mutex
+var _conn net.Conn
 
 func Init() {
 	var serverAdress string
-	if(UsingSimulator()){
+	if UsingSimulator() {
 		serverAdress = fmt.Sprintf("localhost:%d", 15657+MyID())
-	}else{
+	} else {
 		serverAdress = fmt.Sprintf("localhost:%d", 15657)
 	}
 
@@ -33,8 +40,6 @@ func Init() {
 	}
 	_initialized = true
 }
-
-
 
 func SetMotorDirection(dir MotorDirection) {
 	write([4]byte{1, byte(dir), 0, 0})
@@ -55,7 +60,6 @@ func SetDoorOpenLamp(value bool) {
 func SetStopLamp(value bool) {
 	write([4]byte{5, toByte(value), 0, 0})
 }
-
 
 func GetButton(button ButtonType, floor int) bool {
 	a := read([4]byte{6, byte(button), byte(floor), 0})
@@ -84,25 +88,30 @@ func GetObstruction() bool {
 func read(in [4]byte) [4]byte {
 	_mtx.Lock()
 	defer _mtx.Unlock()
-	
+
 	_, err := _conn.Write(in[:])
-	if err != nil { panic("Lost connection to Elevator Server") }
-	
+	if err != nil {
+		panic("Lost connection to Elevator Server")
+	}
+
 	var out [4]byte
 	_, err = _conn.Read(out[:])
-	if err != nil { panic("Lost connection to Elevator Server") }
-	
+	if err != nil {
+		panic("Lost connection to Elevator Server")
+	}
+
 	return out
 }
 
 func write(in [4]byte) {
 	_mtx.Lock()
 	defer _mtx.Unlock()
-	
-	_, err := _conn.Write(in[:])
-	if err != nil { panic("Lost connection to Elevator Server") }
-}
 
+	_, err := _conn.Write(in[:])
+	if err != nil {
+		panic("Lost connection to Elevator Server")
+	}
+}
 
 func toByte(a bool) byte {
 	var b byte = 0

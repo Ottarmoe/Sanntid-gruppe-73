@@ -3,7 +3,7 @@ package network
 import (
 	. "elevator/elevatorConstants"
 	"elevator/networkLow"
-	. "elevator/stateTypes"
+	. "elevator/sharedTypes"
 	"encoding/json"
 	"log"
 	"time"
@@ -14,7 +14,7 @@ import (
 func NetworkSender(netMessageToNetworkSenderCh <-chan NetMessage) {
 	timeToSend := time.NewTicker(BroadcastRate)
 
-	//No periodic sending before the first netmessage has been comunnicated by state
+	//No periodic sending before the first netmessage has been communicated by state
 	netMessage := <-netMessageToNetworkSenderCh
 
 	for {
@@ -39,7 +39,8 @@ func NetworkSender(netMessageToNetworkSenderCh <-chan NetMessage) {
 // Receives network messages, filters out duplicate messages and tracks how often
 // a message is received from each elevator. If no message is received within a given interval,
 // the elevator is marked as neterror. To remove neterror, a certain number of messages must be received
-// during an interval, for x intervals in a row. Unique netmessages and neterror-change is sent to state.
+// during an interval, for x intervals in a row, configurable in elevatorConstants.
+// Unique netmessages and neterror-change is sent to state.
 func NetworkReceiver(netMessageToStateCh chan<- NetMessage, netErrorToStateCh chan<- NetErrorNotification) {
 	var prevNetMessages [NumElevators]NetMessage
 
@@ -56,7 +57,7 @@ func NetworkReceiver(netMessageToStateCh chan<- NetMessage, netErrorToStateCh ch
 		ReceivedIntervals[i] = 0
 	}
 
-	// Start a timeoutCh notifier for each other elevator
+	// Start a timeout notifier for each other elevator
 	timeoutCh := make(chan int)
 	var resetTimerCh [NumElevators]chan struct{}
 	for i := 0; i < NumElevators; i++ {
@@ -70,7 +71,7 @@ func NetworkReceiver(netMessageToStateCh chan<- NetMessage, netErrorToStateCh ch
 	for {
 		select {
 		case netMessage := <-receiveMessageCh:
-			//If in neterror: handle getting back online
+			//If in neterror, handle getting back online:
 			if NetError[netMessage.ID] {
 				ReceivedDuringInterval[netMessage.ID]++
 				if ReceivedDuringInterval[netMessage.ID] < MessagesNeededWithinInterval {
@@ -87,7 +88,7 @@ func NetworkReceiver(netMessageToStateCh chan<- NetMessage, netErrorToStateCh ch
 					}
 				}
 			}
-			//If no neterror: process message normally
+			//If no neterror, process message normally:
 			resetTimerCh[netMessage.ID] <- struct{}{}
 
 			//Avoid bothering state with duplicate messages

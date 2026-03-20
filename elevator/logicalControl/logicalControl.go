@@ -2,7 +2,7 @@ package logicalControl
 
 import (
 	. "elevator/elevatorConstants"
-	. "elevator/stateTypes"
+	. "elevator/sharedTypes"
 	"time"
 )
 
@@ -14,15 +14,19 @@ func LogicalController(
 	physicalStateOutCh chan<- PhysicalState,
 	mechErrorCh chan<- bool,
 ) {
+	//Mechanical error detecting watch dog
 	watchDogGoIdleCh := make(chan struct{})
 	watchDogNewDeadlineCh := make(chan time.Duration)
 	go controlWatchDog(watchDogNewDeadlineCh, watchDogGoIdleCh, mechErrorCh)
+	//door goroutine
 	doorClosedEventCh := make(chan struct{})
 	openDoorDurationCh := make(chan time.Duration)
 	go doors(openDoorDurationCh, doorClosedEventCh, obstructionCh)
 
+	//wait for an initial state
 	currState := <-stateUpdateCh
 	refState := currState
+	//state before modification, used to decide when to send an updated state
 	initialState := currState
 	doReferenceRequest := true
 
@@ -70,13 +74,13 @@ func LogicalController(
 		initialState = currState
 		doReferenceRequest = true
 		select {
-		case newActual := <-stateUpdateCh:
-			newActual.MechError = false //controller always tries to move as if it is fully functional
-			currState.Floor = newActual.Floor
+		case newActualState := <-stateUpdateCh:
+			currState.Floor = newActualState.Floor //the only physical state that is not directly determined by logicalController is the floor
 		case <-doorClosedEventCh:
 			currState.Behaviour = Idle
 		case refState = <-referenceCh:
 			refState.MechError = false
+			//estimate the time until reference is achieved
 			if refState != currState {
 				//time from traversing between floors
 				expectedTime := time.Duration(refState.Floor-currState.Floor) * SecondsPerFloor

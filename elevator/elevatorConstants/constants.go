@@ -24,7 +24,7 @@ const CommunicationPort int = 30173
 const DoorOpenDuration time.Duration = time.Second * 3        //Seconds to hold door open when we arrive at a floor
 const DoorObstructionBuffer time.Duration = time.Second * 1   // acceptable time for door to be open beyond DoorOpenDuration before marking MechError
 const DeadlineBuffer time.Duration = time.Second * 2          // General buffer added to all deadlines
-const SecondsPerFloor time.Duration = time.Second * 4         // Estimated travel time between adjacent floors
+const SecondsPerFloor time.Duration = time.Second * 6         // Estimated travel time between adjacent floors
 const PostObstructionOpenTime time.Duration = time.Second * 1 //amount of time to wait before closing if obstruction released after a long duration
 
 // Elevator specific configuration, personal id and if it should run on a simulator
