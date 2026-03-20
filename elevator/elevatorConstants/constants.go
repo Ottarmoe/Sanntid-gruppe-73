@@ -8,7 +8,7 @@ import (
 )
 
 // State
-const NumFloors int = 9
+const NumFloors int = 4
 const NumElevators int = 3
 const HeartBeatInerval time.Duration = 500 * time.Millisecond //the interval that state is guaranteed to distribute messages
 const DeathCountDown time.Duration = 2 * time.Second          //interval of no movement from state whereupon it is assumed dead
