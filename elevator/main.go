@@ -2,7 +2,7 @@ package main
 
 import (
 	. "elevator/elevatorConstants"
-	"elevator/hardwareControl"
+	"elevator/hardware"
 	. "elevator/network"
 	"elevator/networkLow"
 
@@ -43,10 +43,10 @@ func main() {
 
 	startfloor := PhysicalInit()
 
-	go hardwareControl.PollButtons(sense_buttons)
-	go hardwareControl.PollFloorSensor(sense_floor)
-	go hardwareControl.PollObstructionSwitch(sense_obstr)
-	go hardwareControl.PollStopButton(sense_stop)
+	go hardware.PollButtons(sense_buttons)
+	go hardware.PollFloorSensor(sense_floor)
+	go hardware.PollObstructionSwitch(sense_obstr)
+	go hardware.PollStopButton(sense_stop)
 
 	go state.StateKeeper(startfloor,
 		sense_buttons, sense_floor, int_mot, int_mech,
@@ -54,7 +54,7 @@ func main() {
 		stat_to_controller, ref_request, ref_to_controller,
 		netMessageToNetworkSender, netMessageToState, netErrorToState,
 		stillAliveCh)
-	go hardwareControl.HardWareControl(physicsToHardware, ordersWithConsensusToHardware)
+	go hardware.HardwareOut(physicsToHardware, ordersWithConsensusToHardware)
 	go logicalControl.LogicalController(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
 	go NetworkSender(netMessageToNetworkSender)
 	go NetworkReceiver(netMessageToState, netErrorToState)
