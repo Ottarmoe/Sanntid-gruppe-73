@@ -1,0 +1,156 @@
+package logicalControl
+
+import (
+	. "elevator/elevatorConstants"
+	. "elevator/stateTypes"
+	"fmt"
+	"time"
+)
+
+func LogicalController(
+	referenceInCh <-chan PhysicalState,
+	newStateInCh <-chan PhysicalState,
+	obstructionInCh <-chan bool,
+	referenceRequestOutCh chan<- struct{},
+	physicalStateOutCh chan<- PhysicalState,
+	mechErrorOutCh chan<- bool,
+) {
+	//initialize watchdog (generates mech error)
+	watchDogCloseDeadlineCh := make(chan struct{})
+	watchdogOpenDeadlineCh := make(chan time.Duration)
+	go controlWatchDog(watchdogOpenDeadlineCh, watchDogCloseDeadlineCh, mechErrorOutCh)
+	//initialize door subroutine
+	doorClosedEventCh := make(chan struct{})
+	doorHoldTimeCh := make(chan time.Duration)
+	go doors(doorHoldTimeCh, doorClosedEventCh, obstructionInCh)
+
+	//fetch initial state
+	currState := <-newStateInCh
+	refState := currState
+
+	lastState := currState
+	doReferenceRequest := true
+
+	for {
+		//adjust currState toward refState
+		if currState.Behaviour == DoorOpen {
+			//no action may be taken if doors are open
+
+		} else if currState.Floor == refState.Floor {
+			//if we are on the right floor
+			currState.MovDirection = refState.MovDirection
+			if currState.Behaviour != refState.Behaviour {
+				switch refState.Behaviour {
+				case DoorOpen:
+					doorHoldTimeCh <- DoorOpenDuration
+					currState.Behaviour = DoorOpen
+				case Idle:
+					currState.Behaviour = Idle
+				case Moving:
+					currState.Behaviour = Moving
+				}
+			}
+
+		} else {
+			//if we are not yet on the right floor
+			if refState.Floor < currState.Floor {
+				currState.MovDirection = Down
+			}
+			if refState.Floor > currState.Floor {
+				currState.MovDirection = Up
+			}
+			currState.Behaviour = Moving
+		}
+		//Send updated currState to StateKeeper only if it has changed
+		//fmt.Println("tick")
+		if lastState != currState {
+			fmt.Print("S ")
+			PrintPhysicalState(refState)
+			physicalStateOutCh <- currState
+		}
+		//request new reference and close the current deadline if reference was achieved
+		if currState == refState && doReferenceRequest {
+			//fmt.Println("requesting")
+			referenceRequestOutCh <- struct{}{}
+			if currState.Behaviour == Idle {
+				watchDogCloseDeadlineCh <- struct{}{}
+			}
+		}
+		//wait for any change in state, or the arrival of a new reference
+		lastState = currState
+		doReferenceRequest = true
+		select {
+		case newActual := <-newStateInCh:
+			currState.Floor = newActual.Floor
+			//currState.MechError = false //controller should disregard mech error
+		case <-doorClosedEventCh:
+			currState.Behaviour = Idle
+		case refState = <-referenceInCh:
+			refState.MechError = false
+			if refState != currState {
+				//generate an expected time until reference is achieved
+				//time to traverse between floors
+				expectedTime := time.Duration(refState.Floor-currState.Floor) * SecondsPerFloor
+				if expectedTime < 0 {
+					expectedTime = -expectedTime
+				}
+				//time to close door
+				if currState.Behaviour == DoorOpen {
+					expectedTime += DoorOpenDuration + DoorObstructionBuffer
+				}
+				expectedTime += DeadlineBuffer
+				watchdogOpenDeadlineCh <- expectedTime
+				fmt.Printf("R ")
+				PrintPhysicalState(refState)
+			}
+			doReferenceRequest = false
+		}
+	}
+
+}
+
+func doors(holdOpenFor <-chan time.Duration, doorsClosed chan<- struct{}, obstruction <-chan bool) {
+	closingTime := time.NewTimer(time.Second)
+	closingTime.Stop()
+	obstructed := false
+	timerActive := false
+	for {
+		select {
+		case obstructed = <-obstruction:
+			//only start a new closing timer if the previous closingTime has already passed
+			if !obstructed && !timerActive {
+				closingTime.Reset(PostObstructionOpenTime)
+				timerActive = true
+			}
+		case <-closingTime.C:
+			doorsClosed <- struct{}{}
+			timerActive = false
+		case openTime := <-holdOpenFor:
+			closingTime.Stop()
+			closingTime.Reset(openTime)
+			timerActive = true
+		}
+	}
+}
+
+func controlWatchDog(deadline <-chan time.Duration, goIdle <-chan struct{}, mechErrorOut chan<- bool) {
+	deadLineTimer := time.NewTimer(time.Second)
+	deadLineTimer.Stop()
+	idle := true
+
+	for {
+		select {
+		case deadline := <-deadline:
+			deadLineTimer.Stop()
+			deadLineTimer.Reset(deadline)
+			mechErrorOut <- false
+			idle = false
+		case <-deadLineTimer.C:
+			if !idle {
+				mechErrorOut <- true
+			}
+		case <-goIdle:
+			idle = true
+		}
+	}
+}

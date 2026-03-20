@@ -61,7 +61,7 @@ func StateKeeper(
 			handleMotor(&wv, motorEvent)
 
 		case mechErrorEvent := <-mechError:
-			fmt.Println("mech error", mechErrorEvent)
+			//fmt.Println("mech error", mechErrorEvent)
 			handleMech(&wv, mechErrorEvent)
 
 		case netMessage := <-netMessageToState:
