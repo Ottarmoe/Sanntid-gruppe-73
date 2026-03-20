@@ -6,6 +6,7 @@ import (
 	"elevator/referenceGenerator"
 	. "elevator/stateTypes"
 	"fmt"
+	"time"
 	// "time"
 )
 
@@ -32,11 +33,14 @@ func StateKeeper(
 	netMessageToState <-chan NetMessage,
 	netErrorToState <-chan NetErrorNotification,
 
-	poke <-chan struct{},
+	stillAlive chan<- struct{},
 ) {
 	var wv ElevWorldView = initWorldView(initfloor)
 	me := wv.MyElev()
 
+	heart := time.NewTicker(HeartBeatInerval)
+
+	//initializing communication to controller
 	stateToController <- me.PhysicalState
 
 	var lastRef PhysicalState
@@ -45,6 +49,7 @@ func StateKeeper(
 	for {
 		stateChanged := true
 		select {
+		case <-heart.C:
 		case buttonEvent := <-buttonClick:
 			handleButton(&wv, buttonEvent)
 		case floorEvent := <-floorReached:
@@ -54,6 +59,9 @@ func StateKeeper(
 		case mechEvent := <-mechError:
 			fmt.Println("mech error", mechEvent)
 			handleMech(&wv, mechEvent)
+			if mechEvent == true {
+				return
+			}
 		case netMessage := <-netMessageToState:
 			handleNetworkOrders(&wv, netMessage)
 			handleNetworkPhysics(&wv, netMessage)
@@ -75,10 +83,9 @@ func StateKeeper(
 			}
 			lastRef = ref
 			stateChanged = false
-		case <-poke:
-			stateChanged = false
 		}
 		handleOrderDynamics(&wv)
+		stillAlive <- struct{}{}
 
 		if stateChanged {
 			//Update hardware
@@ -125,4 +132,13 @@ func initWorldView(initfloor int) ElevWorldView {
 	me.PhysicalState.Floor = initfloor
 
 	return wv
+}
+
+// poke main at regular intervals, causing it to send its state to the various modules
+// this can help resolve various error states, and enables the watchdog timer in main
+func heartBeat(pokeChannel chan<- struct{}, interval time.Duration) {
+	for {
+		pokeChannel <- struct{}{}
+		time.Sleep(interval)
+	}
 }
