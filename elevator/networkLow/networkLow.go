@@ -1,6 +1,7 @@
 package networkLow
 
 import (
+	. "elevator/elevatorConstants"
 	"net"
 	// "syscall"
 )
@@ -9,12 +10,12 @@ var conn *net.UDPConn
 
 var broadcastAddr = &net.UDPAddr{
 	IP:   net.IPv4bcast,
-	Port: 30000,
+	Port: CommunicationPort,
 }
 
 var broadcastReceiveAddr = &net.UDPAddr{
 	IP:   net.IPv4zero,
-	Port: 30000,
+	Port: CommunicationPort,
 }
 
 func Init() error {
