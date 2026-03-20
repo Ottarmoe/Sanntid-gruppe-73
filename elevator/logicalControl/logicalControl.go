@@ -22,74 +22,78 @@ func LogicalController(
 	openDoorDuration := make(chan time.Duration)
 	go doors(openDoorDuration, doorClosedEvent, obstruction)
 
-	currentPhysicalState := <-stateUpdate
-	referenceState := currentPhysicalState
-	initialState := currentPhysicalState
+	currState := <-stateUpdate
+	refState := currState
+	initialState := currState
 	doReferenceRequest := true
 
 	for {
-		//if we have reached the right floor
-		if currentPhysicalState.Floor == referenceState.Floor {
-			currentPhysicalState.MovDirection = referenceState.MovDirection
-			if currentPhysicalState.Behaviour != referenceState.Behaviour {
-				if referenceState.Behaviour == DoorOpen {
+		//adjust currState toward refState
+		if currState.Behaviour == DoorOpen {
+			//no action may be taken if doors are open
+
+		} else if currState.Floor == refState.Floor {
+			//if we are on the right floor
+			currState.MovDirection = refState.MovDirection
+			if currState.Behaviour != refState.Behaviour {
+				switch refState.Behaviour {
+				case DoorOpen:
 					openDoorDuration <- DoorOpenDuration
-					currentPhysicalState.Behaviour = DoorOpen
-				} else if referenceState.Behaviour == Idle && currentPhysicalState.Behaviour != DoorOpen {
-					currentPhysicalState.Behaviour = Idle
-				} else if referenceState.Behaviour == Moving && currentPhysicalState.Behaviour != DoorOpen {
-					currentPhysicalState.Behaviour = Moving
+					currState.Behaviour = DoorOpen
+				case Idle:
+					currState.Behaviour = Idle
+				case Moving:
+					currState.Behaviour = Moving
 				}
 			}
-			//if we are not yet on the right floor
+
 		} else {
-			if referenceState.Floor < currentPhysicalState.Floor {
-				currentPhysicalState.MovDirection = Down
+			//if we are not yet on the right floor
+			if refState.Floor < currState.Floor {
+				currState.MovDirection = Down
 			}
-			if referenceState.Floor > currentPhysicalState.Floor {
-				currentPhysicalState.MovDirection = Up
+			if refState.Floor > currState.Floor {
+				currState.MovDirection = Up
 			}
-			if currentPhysicalState.Behaviour != Moving {
-				currentPhysicalState.Behaviour = Moving
-			}
+			currState.Behaviour = Moving
 		}
 		//if anything was changed
-		if initialState != currentPhysicalState {
+		if initialState != currState {
 			fmt.Print("S ")
-			PrintPhysicalState(referenceState)
-			physicalStateOut <- currentPhysicalState
+			PrintPhysicalState(refState)
+			physicalStateOut <- currState
 		}
-		if currentPhysicalState == referenceState && doReferenceRequest {
+		if currState == refState && doReferenceRequest {
 			referenceRequestOut <- struct{}{}
-			if currentPhysicalState.Behaviour == Idle {
+			if currState.Behaviour == Idle {
 				watchDogGoIdle <- struct{}{}
 			}
 		}
 		//wait for any change in state, or the arrival of a new reference
-		initialState = currentPhysicalState
+		initialState = currState
 		doReferenceRequest = true
 		select {
 		case newActual := <-stateUpdate:
 			newActual.MechError = false //controller always tries to move as if it is fully functional
-			currentPhysicalState.Floor = newActual.Floor
+			currState.Floor = newActual.Floor
 		case <-doorClosedEvent:
-			currentPhysicalState.Behaviour = Idle
-		case referenceState = <-reference:
-			referenceState.MechError = false
-			if referenceState != currentPhysicalState {
+			currState.Behaviour = Idle
+		case refState = <-reference:
+			refState.MechError = false
+			if refState != currState {
 				//time from traversing between floors
-				expectedTime := time.Duration(referenceState.Floor-currentPhysicalState.Floor) * SecondsPerFloor
+				expectedTime := time.Duration(refState.Floor-currState.Floor) * SecondsPerFloor
 				if expectedTime < 0 {
 					expectedTime = -expectedTime
 				}
 				//time from door open
-				if currentPhysicalState.Behaviour == DoorOpen {
+				if currState.Behaviour == DoorOpen {
 					expectedTime += DoorObstructionBuffer //adjust this to adjust sensitivity to obstruction
 				}
 				expectedTime += DeadlineBuffer
 				watchDogNewDeadline <- expectedTime
 				fmt.Printf("R ")
-				PrintPhysicalState(referenceState)
+				PrintPhysicalState(refState)
 			}
 			doReferenceRequest = false
 		}

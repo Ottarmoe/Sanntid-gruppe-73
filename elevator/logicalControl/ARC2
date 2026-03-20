@@ -62,7 +62,6 @@ func LogicalController(
 			currState.Behaviour = Moving
 		}
 		//Send updated currState to StateKeeper only if it has changed
-		//fmt.Println("tick")
 		if lastState != currState {
 			fmt.Print("S ")
 			PrintPhysicalState(refState)
