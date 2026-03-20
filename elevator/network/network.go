@@ -60,7 +60,7 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 	timeout := make(chan int)
 	var resetTimer [NumElevators]chan struct{}
 	for i := 0; i < NumElevators; i++ {
-		if i == ID() {
+		if i == MyID() {
 			continue
 		}
 		resetTimer[i] = make(chan struct{}, 1)
@@ -144,7 +144,7 @@ func receiver(receiveMessage chan<- NetMessage) {
 			log.Println("Receive json unmarshal error:", err)
 			continue
 		}
-		if netMessage.ID == ID() {
+		if netMessage.ID == MyID() {
 			continue
 		}
 

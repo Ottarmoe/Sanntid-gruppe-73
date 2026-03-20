@@ -82,7 +82,7 @@ func Init() error {
 	conn = pc.(*net.UDPConn)
 
 	//Simulate packet loss
-	port := 8080 + ID()
+	port := 8080 + MyID()
 
 	http.HandleFunc("/set_loss", func(w http.ResponseWriter, r *http.Request) {
 
@@ -102,7 +102,7 @@ func Init() error {
 
 		fmt.Fprintf(w,
 			"Program ID %d packet loss set to %.2f%%\n",
-			ID(),
+			MyID(),
 			prob*100,
 		)
 	})

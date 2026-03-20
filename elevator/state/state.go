@@ -7,12 +7,7 @@ import (
 	. "elevator/stateTypes"
 	"fmt"
 	"time"
-	// "time"
 )
-
-func PrintSomething() {
-	fmt.Print("hello world\n")
-}
 
 // obstruction is not considered a state, and is handled internally by the door system
 func StateKeeper(
@@ -36,78 +31,70 @@ func StateKeeper(
 	stillAlive chan<- struct{},
 ) {
 	var wv ElevWorldView = initWorldView(initfloor)
-	me := wv.MyElev()
 
+	//heartbeat guarantees state updates at a certain interval for the watchdog timer in main
 	heart := time.NewTicker(HeartBeatInerval)
 
 	//initializing communication to controller
-	stateToController <- me.PhysicalState
+	stateToController <- wv.MyElev().PhysicalState
 
+	//last reference sent, prevents repeat references
 	var lastRef PhysicalState
 	lastRef.Floor = -999
 
 	for {
-		stateChanged := true
+		shouldShareNewState := true
+		//wait for some manner of event to trigger reprocessing of the state
+		//and then send messages with the new state to other modules
+
+		//in order to guarantee that new references for the logical controller are based on the most recent state
+		//the StateKeeper is also obligated to service reference requests from the logicalController when relevant
 		select {
 		case <-heart.C:
 		case buttonEvent := <-buttonClick:
 			handleButton(&wv, buttonEvent)
+
 		case floorEvent := <-floorReached:
 			handleFloor(&wv, floorEvent)
+
 		case motorEvent := <-motor:
 			handleMotor(&wv, motorEvent)
-		case mechEvent := <-mechError:
-			fmt.Println("mech error", mechEvent)
-			handleMech(&wv, mechEvent)
-			if mechEvent == true {
-				return
-			}
+
+		case mechErrorEvent := <-mechError:
+			fmt.Println("mech error", mechErrorEvent)
+			handleMech(&wv, mechErrorEvent)
+
 		case netMessage := <-netMessageToState:
 			handleNetworkOrders(&wv, netMessage)
 			handleNetworkPhysics(&wv, netMessage)
-		case netErrorNotification := <-netErrorToState: //burde dette caset og det over synkroniseres?
+
+		case netErrorNotification := <-netErrorToState:
 			wv.NetError[netErrorNotification.ID] = netErrorNotification.NetError
 			fmt.Println("NetError:", wv.NetError)
-		case _ = <-referenceRequest:
-			var physics [NumElevators]PhysicalState
-			for elev := 0; elev < NumElevators; elev++ {
-				physics[elev] = wv.ElevStates[elev].PhysicalState
-			}
-			ordersWithConsensus := findConsensus(wv)
-			relevantOrders := hallRequestAssigner.HRA(ordersWithConsensus, physics, wv.NetError)
-			ref := referenceGenerator.ReferenceGenerator(me.PhysicalState, relevantOrders)
-			_ = ref
-			//fmt.Println("sending ref to controller")
+
+		case <-referenceRequest:
+			ordersWithConsensus := findConsensus(&wv)
+			relevantOrders := hallRequestAssigner.HRA(ordersWithConsensus, compilePhysicalStates(&wv), wv.NetError)
+			ref := referenceGenerator.ReferenceGenerator(wv.MyElev().PhysicalState, relevantOrders)
+			//avoid repeat references
 			if lastRef != ref {
 				refToController <- ref
 			}
 			lastRef = ref
-			stateChanged = false
+			shouldShareNewState = false
 		}
 		handleOrderDynamics(&wv)
 		stillAlive <- struct{}{}
 
-		if stateChanged {
-			//Update hardware
-			ordersWithConsensus := findConsensus(wv)
-			//fmt.Println("sending to hardware")
+		if shouldShareNewState {
+			//Update hardware and controller
+			ordersWithConsensus := findConsensus(&wv)
 			ordersWithConsensusToHardware <- ordersWithConsensus
-			physicsToHardware <- me.PhysicalState
+			physicsToHardware <- wv.MyElev().PhysicalState
+			stateToController <- wv.MyElev().PhysicalState
 
 			//New state info to network
-			var cabBackups [NumElevators][NumFloors]CabOrderState
-			for elev := 0; elev < NumElevators; elev++ {
-				cabBackups[elev] = wv.ElevStates[elev].OrderState.CabOrders
-			}
-			netMessage := NetMessage{
-				ID:         ID(),
-				ElevState:  *me,
-				CabBackups: cabBackups,
-			}
-			//fmt.Println("sending to net")
-			netMessageToNetworkSender <- netMessage
-			//fmt.Println("sending to conntroller")
-			stateToController <- me.PhysicalState
+			netMessageToNetworkSender <- wv.CompileNetMessage()
 		}
 	}
 }
@@ -132,13 +119,4 @@ func initWorldView(initfloor int) ElevWorldView {
 	me.PhysicalState.Floor = initfloor
 
 	return wv
-}
-
-// poke main at regular intervals, causing it to send its state to the various modules
-// this can help resolve various error states, and enables the watchdog timer in main
-func heartBeat(pokeChannel chan<- struct{}, interval time.Duration) {
-	for {
-		pokeChannel <- struct{}{}
-		time.Sleep(interval)
-	}
 }

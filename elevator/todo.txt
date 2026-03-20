@@ -20,7 +20,7 @@ Sørge for at det er løst likt hele veien.
 - Gå over all navngivning! Bruk search (ctrl + shift + f) og erstatt i alle filer.
 - alle testfunksjoner/ekstra funksjoner bør ligge i egne filer som kan fjernes. 
 Har blant annet print funksjon i stateTypes
--bruke ID() overalt
+-bruke MyID() overalt
 
 refleksjon
 -gjøre det veldig klart hva state, orderHandling og physicsHandling faktisk gjør. 

@@ -1,6 +1,7 @@
 package state
 
 import (
+	. "elevator/elevatorConstants"
 	. "elevator/stateTypes"
 )
 
@@ -19,4 +20,12 @@ func handleMech(wv *ElevWorldView, event bool) {
 
 func handleNetworkPhysics(wv *ElevWorldView, netMessage NetMessage) {
 	wv.ElevStates[netMessage.ID].PhysicalState = netMessage.ElevState.PhysicalState
+}
+
+func compilePhysicalStates(wv *ElevWorldView) [NumElevators]PhysicalState {
+	var completePhysicalState [NumElevators]PhysicalState
+	for elev := 0; elev < NumElevators; elev++ {
+		completePhysicalState[elev] = wv.ElevStates[elev].PhysicalState
+	}
+	return completePhysicalState
 }

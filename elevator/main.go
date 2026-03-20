@@ -18,7 +18,7 @@ import (
 func main() {
 	ConstantsInit()
 
-	serverAdress := fmt.Sprintf("localhost:%d", 15657+ID())
+	serverAdress := fmt.Sprintf("localhost:%d", 15657+MyID())
 	hardwareLow.Init(serverAdress)
 	networkLow.Init()
 

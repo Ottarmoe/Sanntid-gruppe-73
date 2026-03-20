@@ -84,7 +84,7 @@ type OurOrders struct {
 	CabOrders  [NumFloors]bool
 }
 
-//Hardware event types
+// Hardware event types
 type MotorDirection int
 
 const (
@@ -106,26 +106,75 @@ type ButtonEvent struct {
 	Button ButtonType
 }
 
-//helper functions
+// helper functions
 func (wv *ElevWorldView) IsOnline(elev int) bool {
-    return !wv.NetError[elev] || elev == ID()
+	return !wv.NetError[elev] || elev == MyID()
+}
+func (wv *ElevWorldView) IsOnlinePeer(elev int) bool {
+	return !wv.NetError[elev] && elev != MyID()
+}
+func (wv *ElevWorldView) IsOfflinePeer(elev int) bool {
+	return wv.NetError[elev] && elev != MyID()
+}
+func (wv *ElevWorldView) AnyPeerExists() bool {
+	for elev := 0; elev < NumElevators; elev++ {
+		if wv.IsOnlinePeer(elev) {
+			return true
+		}
+	}
+	return false
 }
 
 func (wv *ElevWorldView) GetHallOrder(elev int, floor int, dir Direction) HallOrderState {
-    return wv.ElevStates[elev].OrderState.HallOrders[floor][dir]
+	return wv.ElevStates[elev].OrderState.HallOrders[floor][dir]
 }
 
 func (wv *ElevWorldView) MyElev() *ElevState {
-    return &wv.ElevStates[ID()]
+	return &wv.ElevStates[MyID()]
 }
 
-func (wv *ElevWorldView) AnyoneInHallOrderState(hallOrderState HallOrderState,floor int, dir Direction) bool {
-    for elev := 0; elev < NumElevators; elev++ {
-        if wv.IsOnline(elev) {
-            if wv.GetHallOrder(elev, floor, dir) == hallOrderState {
-                return true
-            }
-        }
-    }
-    return false
+func (wv *ElevWorldView) AnyoneInHallOrderState(hallOrderState HallOrderState, floor int, dir Direction) bool {
+	for elev := 0; elev < NumElevators; elev++ {
+		if wv.IsOnline(elev) {
+			if wv.GetHallOrder(elev, floor, dir) == hallOrderState {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (wv *ElevWorldView) AnyoneElseInHallOrderState(hallOrderState HallOrderState, floor int, dir Direction) bool {
+	for elev := 0; elev < NumElevators; elev++ {
+		if wv.IsOnlinePeer(elev) {
+			if wv.GetHallOrder(elev, floor, dir) == hallOrderState {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (wv *ElevWorldView) CabOrderArchiveExists(floor int) bool {
+	for elev := 0; elev < NumElevators; elev++ {
+		if wv.IsOnlinePeer(elev) {
+			if wv.CabAgreement[elev][floor] {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (wv *ElevWorldView) CompileNetMessage() NetMessage {
+	var cabBackups [NumElevators][NumFloors]CabOrderState
+	for elev := 0; elev < NumElevators; elev++ {
+		cabBackups[elev] = wv.ElevStates[elev].OrderState.CabOrders
+	}
+	netMessage := NetMessage{
+		ID:         MyID(),
+		ElevState:  *wv.MyElev(),
+		CabBackups: cabBackups,
+	}
+	return netMessage
 }

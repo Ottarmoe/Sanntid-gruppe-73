@@ -55,8 +55,8 @@ func ordersWithConsensusToHardware(orders OrdersWithConsensus, prev OrdersWithCo
 		if orders.HallOrders[floor][Up] != prev.HallOrders[floor][Up] {
 			SetButtonLamp(BT_HallUp, floor, orders.HallOrders[floor][Up])
 		}
-		if orders.CabOrders[ID()][floor] != prev.CabOrders[ID()][floor] {
-			SetButtonLamp(BT_Cab, floor, orders.CabOrders[ID()][floor])
+		if orders.CabOrders[MyID()][floor] != prev.CabOrders[MyID()][floor] {
+			SetButtonLamp(BT_Cab, floor, orders.CabOrders[MyID()][floor])
 		}
 	}
 }

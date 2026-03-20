@@ -30,6 +30,6 @@ func ConstantsInit() {
 		elevatorID, _ = strconv.Atoi(os.Args[1])
 	}
 }
-func ID() int {
+func MyID() int {
 	return elevatorID
 }

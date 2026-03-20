@@ -29,53 +29,29 @@ func handleButton(wv *ElevWorldView, event ButtonEvent) {
 	}
 }
 
-func findConsensus(wv ElevWorldView) OrdersWithConsensus {
+func findConsensus(wv *ElevWorldView) OrdersWithConsensus {
 	var ordersWithConsensus OrdersWithConsensus
+	//copy the cab orders from all elevators
 	for elev := 0; elev < NumElevators; elev++ {
 		for floor := 0; floor < NumFloors; floor++ {
 			ordersWithConsensus.CabOrders[elev][floor] = (wv.ElevStates[elev].OrderState.CabOrders[floor] == CabO)
 		}
 	}
 
+	//check for consensus on our hall and cab order states
 	for floor := 0; floor < NumFloors; floor++ {
-		//check for consensus on _our_ hall and cab order states
-		hallDownExists := false
-		hallUpExists := false
-		cabExists := false
-		anyElevExists := false
-		for elev := 0; elev < NumElevators; elev++ {
-			peerHallOrders := &wv.ElevStates[elev].OrderState.HallOrders
-
-			if wv.NetError[elev] == false && ID() != elev {
-				anyElevExists = true
-				if peerHallOrders[floor][Down] == HallO {
-					hallDownExists = true
-				}
-				if peerHallOrders[floor][Up] == HallO {
-					hallUpExists = true
-				}
-				if wv.CabAgreement[elev][floor] == true {
-					cabExists = true
-				}
+		//hall orders
+		for _, dir := range []Direction{Up, Down} {
+			if !wv.AnyoneInHallOrderState(HallOPR, floor, dir) &&
+				wv.AnyoneElseInHallOrderState(HallO, floor, dir) {
+				ordersWithConsensus.HallOrders[floor][dir] = true
+			} else {
+				ordersWithConsensus.HallOrders[floor][dir] = false
 			}
 		}
-		HallOrders := &wv.ElevStates[ID()].OrderState.HallOrders
-		CabOrders := &wv.ElevStates[ID()].OrderState.CabOrders
-
-		if (!anyElevExists || hallDownExists) && (HallOrders[floor][Down] == HallO) {
-			ordersWithConsensus.HallOrders[floor][Down] = true
-		} else {
-			ordersWithConsensus.HallOrders[floor][Down] = false
-		}
-		if (!anyElevExists || hallUpExists) && (HallOrders[floor][Up] == HallO) {
-			ordersWithConsensus.HallOrders[floor][Up] = true
-		} else {
-			ordersWithConsensus.HallOrders[floor][Up] = false
-		}
-		if (!anyElevExists || cabExists) && (CabOrders[floor] == CabO) {
-			ordersWithConsensus.CabOrders[ID()][floor] = true
-		} else {
-			ordersWithConsensus.CabOrders[ID()][floor] = false
+		//negate cab order if not archived
+		if wv.AnyPeerExists() && !wv.CabOrderArchiveExists(floor) {
+			ordersWithConsensus.CabOrders[MyID()][floor] = false
 		}
 	}
 	return ordersWithConsensus
@@ -84,7 +60,7 @@ func findConsensus(wv ElevWorldView) OrdersWithConsensus {
 func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	wv.ElevStates[netMessage.ID].OrderState.HallOrders = netMessage.ElevState.OrderState.HallOrders
 
-	//atchive their cab state
+	//archive their cab state
 	for floor := 0; floor < NumFloors; floor++ {
 		if netMessage.ElevState.OrderState.CabOrders[floor] != CabUO {
 			wv.ElevStates[netMessage.ID].OrderState.CabOrders[floor] = netMessage.ElevState.OrderState.CabOrders[floor]
@@ -92,7 +68,7 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	}
 	//check if their archive is up to date
 	for floor := 0; floor < NumFloors; floor++ {
-		if netMessage.CabBackups[ID()][floor] == wv.MyElev().OrderState.CabOrders[floor] {
+		if netMessage.CabBackups[MyID()][floor] == wv.MyElev().OrderState.CabOrders[floor] {
 			wv.CabAgreement[netMessage.ID][floor] = true
 		} else {
 			wv.CabAgreement[netMessage.ID][floor] = false
@@ -102,16 +78,16 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	if !wv.CabArchiveSeen[netMessage.ID] {
 		for floor := 0; floor < NumFloors; floor++ {
 			if wv.MyElev().OrderState.CabOrders[floor] == CabUO {
-				if netMessage.CabBackups[ID()][floor] == CabO {
+				if netMessage.CabBackups[MyID()][floor] == CabO {
 					wv.MyElev().OrderState.CabOrders[floor] = CabO
 				}
 			}
 		}
 		wv.CabArchiveSeen[netMessage.ID] = true
 	}
-	//if some elevator is in net error, diffuse their cab archive from this other elevator
+	//if some other elevator is not online, accept a copy of the archive of this elevator cab order state from the message
 	for elev := 0; elev < NumElevators; elev++ {
-		if wv.NetError[elev] && elev != ID() {
+		if wv.IsOfflinePeer(elev) {
 			for floor := 0; floor < NumFloors; floor++ {
 				if netMessage.CabBackups[elev][floor] == CabO {
 					wv.ElevStates[elev].OrderState.CabOrders[floor] = CabO
