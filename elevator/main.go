@@ -66,11 +66,11 @@ func PhysicalInit() int {
 	if GetFloor() != -1 {
 		return GetFloor()
 	}
-	SetMotorDirection(MD_Down)
+	SetMotorDirection(MotorDirDown)
 	for GetFloor() == -1 {
 	}
 
-	SetMotorDirection(MD_Stop)
+	SetMotorDirection(MotorDirStop)
 	return GetFloor()
 }
 

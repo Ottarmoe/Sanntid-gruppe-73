@@ -11,15 +11,15 @@ func handleButton(wv *ElevWorldView, event ButtonEvent) {
 	floor := event.Floor
 
 	switch event.Button {
-	case BT_HallUp:
+	case ButtonHallUp:
 		if !wv.AnyoneInHallOrderState(HallOPR, floor, Up) {
 			me.OrderState.HallOrders[floor][Up] = HallO
 		}
-	case BT_HallDown:
+	case ButtonHallDown:
 		if !wv.AnyoneInHallOrderState(HallOPR, floor, Down) {
 			me.OrderState.HallOrders[floor][Down] = HallO
 		}
-	case BT_Cab:
+	case ButtonCab:
 		if me.OrderState.CabOrders[floor] != CabO {
 			me.OrderState.CabOrders[floor] = CabO
 			for elev := 0; elev < NumElevators; elev++ {

@@ -88,17 +88,17 @@ type OurOrders struct {
 type MotorDirection int
 
 const (
-	MD_Up   MotorDirection = 1
-	MD_Down                = -1
-	MD_Stop                = 0
+	MotorDirUp   MotorDirection = 1
+	MotorDirDown                = -1
+	MotorDirStop                = 0
 )
 
 type ButtonType int
 
 const (
-	BT_HallUp   ButtonType = 0
-	BT_HallDown            = 1
-	BT_Cab                 = 2
+	ButtonHallUp   ButtonType = 0
+	ButtonHallDown            = 1
+	ButtonCab                 = 2
 )
 
 type ButtonEvent struct {

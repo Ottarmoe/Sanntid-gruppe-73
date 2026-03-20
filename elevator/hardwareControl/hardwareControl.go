@@ -29,18 +29,18 @@ func physicalStateToHardware(state PhysicalState) {
 	SetFloorIndicator(state.Floor)
 	switch state.Behaviour {
 	case Idle:
-		SetMotorDirection(MD_Stop)
+		SetMotorDirection(MotorDirStop)
 		SetDoorOpenLamp(false)
 	case Moving:
 		SetDoorOpenLamp(false)
 		if state.MovDirection == Up {
-			SetMotorDirection(MD_Up)
+			SetMotorDirection(MotorDirUp)
 		}
 		if state.MovDirection == Down {
-			SetMotorDirection(MD_Down)
+			SetMotorDirection(MotorDirDown)
 		}
 	case DoorOpen:
-		SetMotorDirection(MD_Stop)
+		SetMotorDirection(MotorDirStop)
 		SetDoorOpenLamp(true)
 	}
 }
@@ -50,22 +50,22 @@ func physicalStateToHardware(state PhysicalState) {
 func ordersWithConsensusToHardware(orders OrdersWithConsensus, prev OrdersWithConsensus) {
 	for floor := 0; floor < NumFloors; floor++ {
 		if orders.HallOrders[floor][Down] != prev.HallOrders[floor][Down] {
-			SetButtonLamp(BT_HallDown, floor, orders.HallOrders[floor][Down])
+			SetButtonLamp(ButtonHallDown, floor, orders.HallOrders[floor][Down])
 		}
 		if orders.HallOrders[floor][Up] != prev.HallOrders[floor][Up] {
-			SetButtonLamp(BT_HallUp, floor, orders.HallOrders[floor][Up])
+			SetButtonLamp(ButtonHallUp, floor, orders.HallOrders[floor][Up])
 		}
 		if orders.CabOrders[MyID()][floor] != prev.CabOrders[MyID()][floor] {
-			SetButtonLamp(BT_Cab, floor, orders.CabOrders[MyID()][floor])
+			SetButtonLamp(ButtonCab, floor, orders.CabOrders[MyID()][floor])
 		}
 	}
 }
 
 func resetLights() {
 	for floor := 0; floor < NumFloors; floor++ {
-		SetButtonLamp(BT_HallDown, floor, false)
-		SetButtonLamp(BT_HallUp, floor, false)
-		SetButtonLamp(BT_Cab, floor, false)
+		SetButtonLamp(ButtonHallDown, floor, false)
+		SetButtonLamp(ButtonHallUp, floor, false)
+		SetButtonLamp(ButtonCab, floor, false)
 	}
 }
 
