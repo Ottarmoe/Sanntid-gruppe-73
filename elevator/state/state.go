@@ -12,9 +12,11 @@ import (
 // obstruction is not considered a state, and is handled internally by the door system
 func StateKeeper(
 	initfloor int,
+
 	buttonClickCh <-chan ButtonEvent,
 	floorReachedCh <-chan int,
 	motorStateCh <-chan PhysicalState,
+
 	mechErrorCh <-chan bool,
 
 	ordersWithConsensusToHardwareCh chan<- OrdersWithConsensus,
@@ -52,16 +54,16 @@ func StateKeeper(
 		select {
 		case <-heart.C:
 		case buttonEvent := <-buttonClickCh:
-			handleButton(&wv, buttonEvent)
+			handleButtonEvent(&wv, buttonEvent)
 
 		case floorEvent := <-floorReachedCh:
-			handleFloor(&wv, floorEvent)
+			handleFloorEvent(&wv, floorEvent)
 
 		case motorEvent := <-motorStateCh:
-			handleMotor(&wv, motorEvent)
+			handleMotorEvent(&wv, motorEvent)
 
 		case mechErrorEvent := <-mechErrorCh:
-			handleMech(&wv, mechErrorEvent)
+			handleMechErrorEvent(&wv, mechErrorEvent)
 
 		case netMessage := <-netMessageToStateCh:
 			handleNetworkOrders(&wv, netMessage)

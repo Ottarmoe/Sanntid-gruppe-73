@@ -5,16 +5,16 @@ import (
 	. "elevator/stateTypes"
 )
 
-func handleFloor(wv *ElevWorldView, event int) {
+func handleFloorEvent(wv *ElevWorldView, event int) {
 	wv.MyElev().PhysicalState.Floor = event
 }
 
-func handleMotor(wv *ElevWorldView, event PhysicalState) {
+func handleMotorEvent(wv *ElevWorldView, event PhysicalState) {
 	wv.MyElev().PhysicalState.Behaviour = event.Behaviour
 	wv.MyElev().PhysicalState.MovDirection = event.MovDirection
 }
 
-func handleMech(wv *ElevWorldView, event bool) {
+func handleMechErrorEvent(wv *ElevWorldView, event bool) {
 	wv.MyElev().PhysicalState.MechError = event
 }
 

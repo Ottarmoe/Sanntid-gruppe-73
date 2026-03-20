@@ -5,7 +5,7 @@ import (
 	. "elevator/stateTypes"
 )
 
-func handleButton(wv *ElevWorldView, event ButtonEvent) {
+func handleButtonEvent(wv *ElevWorldView, event ButtonEvent) {
 	me := wv.MyElev()
 	floor := event.Floor
 
