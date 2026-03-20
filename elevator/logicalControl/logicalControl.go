@@ -59,8 +59,6 @@ func LogicalController(
 		}
 		//if anything was changed
 		if initialState != currState {
-			fmt.Print("S ")
-			PrintPhysicalState(refState)
 			physicalStateOut <- currState
 		}
 		if currState == refState && doReferenceRequest {
@@ -93,7 +91,6 @@ func LogicalController(
 				expectedTime += DeadlineBuffer
 				watchDogNewDeadline <- expectedTime
 				fmt.Printf("R ")
-				PrintPhysicalState(refState)
 			}
 			doReferenceRequest = false
 		}

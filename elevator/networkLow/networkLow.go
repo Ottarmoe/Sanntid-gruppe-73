@@ -3,7 +3,6 @@ package networkLow
 import (
 	. "elevator/elevatorConstants"
 	"net"
-	// "syscall"
 )
 
 var conn *net.UDPConn
@@ -25,18 +24,6 @@ func Init() error {
 	if err != nil {
 		return err
 	}
-
-	// rawConn, err := conn.SyscallConn()
-	// if err != nil {
-	// 	return err
-	// }
-
-	// err = rawConn.Control(func(fd uintptr) {
-	// 	syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_BROADCAST, 1)
-	// })
-	// if err != nil {
-	// 	return err
-	// }
 
 	return nil
 }

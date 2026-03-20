@@ -3,7 +3,6 @@ package state
 import (
 	. "elevator/elevatorConstants"
 	. "elevator/stateTypes"
-	// "fmt"
 )
 
 func handleButton(wv *ElevWorldView, event ButtonEvent) {
