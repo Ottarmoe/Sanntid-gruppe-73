@@ -1,7 +1,6 @@
 package hardwareLow
 
 import (
-	. "elevator/elevatorConstants"
 	. "elevator/sharedTypes"
 	"fmt"
 	"net"
