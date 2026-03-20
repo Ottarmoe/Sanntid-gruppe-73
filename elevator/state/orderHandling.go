@@ -42,7 +42,11 @@ func findConsensus(wv *ElevWorldView) OrdersWithConsensus {
 	for floor := 0; floor < NumFloors; floor++ {
 		//hall orders
 		for _, dir := range []Direction{Up, Down} {
-			if !wv.AnyoneInHallOrderState(HallOPR, floor, dir) &&
+			if !wv.AnyPeerExists() {
+				if wv.MyElev().OrderState.HallOrders[floor][dir] == HallO {
+					ordersWithConsensus.HallOrders[floor][dir] = true
+				}
+			} else if !wv.AnyoneInHallOrderState(HallOPR, floor, dir) &&
 				wv.AnyoneElseInHallOrderState(HallO, floor, dir) {
 				ordersWithConsensus.HallOrders[floor][dir] = true
 			} else {
