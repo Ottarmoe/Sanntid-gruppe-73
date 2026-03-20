@@ -115,7 +115,9 @@ func doors(holdOpenFor <-chan time.Duration, doorsClosed chan<- struct{}, obstru
 				timerActive = true
 			}
 		case <-closingTime.C:
-			doorsClosed <- struct{}{}
+			if !obstructed {
+				doorsClosed <- struct{}{}
+			}
 			timerActive = false
 		case openTime := <-holdOpenFor:
 			closingTime.Stop()

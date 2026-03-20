@@ -66,6 +66,16 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 			wv.ElevStates[netMessage.ID].OrderState.CabOrders[floor] = netMessage.ElevState.OrderState.CabOrders[floor]
 		}
 	}
+	//if that elevator not yet seen, integrate their archive
+	if !wv.CabArchiveSeen[netMessage.ID] {
+		//fmt.Println("integrating new archive")
+		for floor := 0; floor < NumFloors; floor++ {
+			if netMessage.CabBackups[MyID()][floor] == CabO {
+				wv.MyElev().OrderState.CabOrders[floor] = CabO
+			}
+		}
+		wv.CabArchiveSeen[netMessage.ID] = true
+	}
 	//check if their archive is up to date
 	for floor := 0; floor < NumFloors; floor++ {
 		if netMessage.CabBackups[MyID()][floor] == wv.MyElev().OrderState.CabOrders[floor] {
@@ -73,17 +83,6 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 		} else {
 			wv.CabAgreement[netMessage.ID][floor] = false
 		}
-	}
-	//if that elevator not yet seen, integrate their archive
-	if !wv.CabArchiveSeen[netMessage.ID] {
-		for floor := 0; floor < NumFloors; floor++ {
-			if wv.MyElev().OrderState.CabOrders[floor] == CabUO {
-				if netMessage.CabBackups[MyID()][floor] == CabO {
-					wv.MyElev().OrderState.CabOrders[floor] = CabO
-				}
-			}
-		}
-		wv.CabArchiveSeen[netMessage.ID] = true
 	}
 	//if some other elevator is not online, accept a copy of the archive of this elevator cab order state from the message
 	for elev := 0; elev < NumElevators; elev++ {

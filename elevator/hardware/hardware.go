@@ -17,7 +17,7 @@ func HardwareOut(physicalToHardware <-chan PhysicalState, ordersWithConsensusToH
 	for {
 		select {
 		case physicalState := <-physicalToHardware:
-			updateMotorAndDoors(physicalState)
+			updateMotorAndDoor(physicalState)
 
 		case ordersWithConsensus := <-ordersWithConsensusToHardware:
 			updateButtonLights(ordersWithConsensus, prevConsensus)
@@ -79,8 +79,8 @@ func PollObstructionSwitch(receiver chan<- bool) {
 	}
 }
 
-// updateMotorAndDoors drives motor and door lamp to match the current behaviour
-func updateMotorAndDoors(physicalState PhysicalState) {
+// updateMotorAndDoor drives motor and door lamp to match the current behaviour
+func updateMotorAndDoor(physicalState PhysicalState) {
 	SetFloorIndicator(physicalState.Floor)
 	switch physicalState.Behaviour {
 	case Idle:
@@ -98,10 +98,13 @@ func updateMotorAndDoors(physicalState PhysicalState) {
 		SetMotorDirection(MotorDirStop)
 		SetDoorOpenLamp(true)
 	}
+	//bonus feature :D
+	//mark mech error by lighting the stop button
+	SetStopLamp(physicalState.MechError)
 }
 
 // updateButtonLights updates button lamps to reflect agreed-upon orders.
-// Only updates lamps that have changed since the last update to minimize redundant hardware call
+// Only updates lamps that have changed since the last update to limit redundant hardware call
 func updateButtonLights(orders OrdersWithConsensus, prev OrdersWithConsensus) {
 	for floor := 0; floor < NumFloors; floor++ {
 		if orders.HallOrders[floor][Down] != prev.HallOrders[floor][Down] {
