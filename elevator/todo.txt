@@ -9,6 +9,8 @@ Håndtere netmessage med feil id
 kan noen constants, ev. structs flyttes til akutell modul?
 Istedenfor pokestate, kan vi ha en watchdog for statekeeper, som har en killGoRoutinechannel? kommenter pokestate
 hra feil og filsystem
+--id
+--server
 
 code quality
 - use gofmt
