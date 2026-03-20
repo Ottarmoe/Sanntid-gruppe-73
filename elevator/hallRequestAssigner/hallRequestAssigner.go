@@ -23,27 +23,27 @@ type HRAInput struct {
 	States       map[string]HRAElevatorState `json:"states"`
 }
 
-func HRA(orders OrdersWithConsensus, physics [NumElevators]PhysicalState, netError [NumElevators]bool) OurOrders {
+func HRA(orders OrdersWithConsensus, physicalStates [NumElevators]PhysicalState, netError [NumElevators]bool) AssignedOrders {
 	//sanitize input
 	for elev := 0; elev < NumElevators; elev++ {
-		if physics[elev].Floor == 0 {
-			physics[elev].MovDirection = Up
+		if physicalStates[elev].Floor == 0 {
+			physicalStates[elev].MovDirection = Up
 		}
-		if physics[elev].Floor == NumFloors-1 {
-			physics[elev].MovDirection = Down
+		if physicalStates[elev].Floor == NumFloors-1 {
+			physicalStates[elev].MovDirection = Down
 		}
 	}
 
-	input := buildHRAInput(orders, physics, netError)
+	input := buildHRAInput(orders, physicalStates, netError)
 	output, err := runHRAExecutable(input)
 	if err != nil {
 		fmt.Println("HRA error: ", err)
-		return OurOrders{}
+		return AssignedOrders{}
 	}
 	return extractHRAOrders(output, orders)
 }
 
-func buildHRAInput(orders OrdersWithConsensus, physics [NumElevators]PhysicalState, netError [NumElevators]bool) HRAInput {
+func buildHRAInput(orders OrdersWithConsensus, physicalStates [NumElevators]PhysicalState, netError [NumElevators]bool) HRAInput {
 	input := HRAInput{
 		HallRequests: [][2]bool{{false, false}, {false, false}, {false, false}, {false, false}},
 		States:       make(map[string]HRAElevatorState),
@@ -51,11 +51,11 @@ func buildHRAInput(orders OrdersWithConsensus, physics [NumElevators]PhysicalSta
 	input.HallRequests = orders.HallOrders[:]
 
 	for elev := 0; elev < NumElevators; elev++ {
-		if !physics[elev].MechError && !netError[elev] || elev == MyID() {
+		if !physicalStates[elev].MechError && !netError[elev] || elev == MyID() {
 			input.States[fmt.Sprintf("%d", elev)] = HRAElevatorState{
-				Behavior:    []string{"idle", "moving", "doorOpen"}[physics[elev].Behaviour],
-				Floor:       physics[elev].Floor,
-				Direction:   []string{"up", "down"}[physics[elev].MovDirection],
+				Behavior:    []string{"idle", "moving", "doorOpen"}[physicalStates[elev].Behaviour],
+				Floor:       physicalStates[elev].Floor,
+				Direction:   []string{"up", "down"}[physicalStates[elev].MovDirection],
 				CabRequests: orders.CabOrders[elev][:],
 			}
 		}
@@ -83,12 +83,12 @@ func runHRAExecutable(input HRAInput) (map[string][][2]bool, error) {
 }
 
 // extractHRAOrders picks this elevator's assigned hall orders from the assigner output and combines with cab orders.
-func extractHRAOrders(output map[string][][2]bool, orders OrdersWithConsensus) OurOrders {
+func extractHRAOrders(output map[string][][2]bool, orders OrdersWithConsensus) AssignedOrders {
 	var hallOrders [NumFloors][2]bool
 	for i := range hallOrders {
 		hallOrders[i] = output[fmt.Sprintf("%d", MyID())][i]
 	}
-	return OurOrders{
+	return AssignedOrders{
 		HallOrders: hallOrders,
 		CabOrders:  orders.CabOrders[MyID()],
 	}

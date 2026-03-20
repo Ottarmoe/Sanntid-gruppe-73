@@ -73,14 +73,14 @@ type NetErrorNotification struct {
 	NetError bool
 }
 
-// Consensus struct
+// Structs that represent purely if an order exists or not. 
 type OrdersWithConsensus struct {
-	HallOrders [NumFloors][2]bool //0 is up, 1 is down, use "direction"
+	HallOrders [NumFloors][2]bool 
 	CabOrders  [NumElevators][NumFloors]bool
 }
 
-type OurOrders struct {
-	HallOrders [NumFloors][2]bool //0 is up, 1 is down, use "direction"
+type AssignedOrders struct {
+	HallOrders [NumFloors][2]bool 
 	CabOrders  [NumFloors]bool
 }
 

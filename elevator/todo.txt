@@ -36,3 +36,4 @@ Med networkLow versjonen for innlevering og ikke versjonen for WSL)
 commands
 ./SimElevatorServer --port 15657 --numfloors 9
 curl "http://localhost:8080/set_loss?prob=0"
+git clone https://github.com/Ottarmoe/Sanntid-gruppe-73.git

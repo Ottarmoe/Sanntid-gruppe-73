@@ -5,7 +5,7 @@ import (
 	. "elevator/stateTypes"
 )
 
-func ReferenceGenerator(myPhysicalState PhysicalState, myOrders OurOrders) PhysicalState {
+func ReferenceGenerator(myPhysicalState PhysicalState, myOrders AssignedOrders) PhysicalState {
 	CurrentFloor := myPhysicalState.Floor
 	CurrentDirection := myPhysicalState.MovDirection
 
@@ -80,7 +80,7 @@ func oppositeDirection(direction Direction) Direction {
 	return Up
 }
 
-func orderOnCurrentFloorInSameDirection(me PhysicalState, orders OurOrders) bool {
+func orderOnCurrentFloorInSameDirection(me PhysicalState, orders AssignedOrders) bool {
 	floor := me.Floor
 	direction := me.MovDirection
 	hallOrders := orders.HallOrders
@@ -89,7 +89,7 @@ func orderOnCurrentFloorInSameDirection(me PhysicalState, orders OurOrders) bool
 	return hallOrders[floor][direction] || cabOrders[floor]
 }
 
-func orderOnCurrentFloorInOppositeDirection(me PhysicalState, orders OurOrders) bool {
+func orderOnCurrentFloorInOppositeDirection(me PhysicalState, orders AssignedOrders) bool {
 	floor := me.Floor
 	direction := oppositeDirection(me.MovDirection)
 	hallOrders := orders.HallOrders
@@ -97,15 +97,15 @@ func orderOnCurrentFloorInOppositeDirection(me PhysicalState, orders OurOrders) 
 	return hallOrders[floor][direction]
 }
 
-func orderInSameDirection(me PhysicalState, orders OurOrders) bool {
+func orderInSameDirection(me PhysicalState, orders AssignedOrders) bool {
 	return orderInDirection(me.Floor, me.MovDirection, orders)
 }
 
-func orderInOppositeDirection(me PhysicalState, orders OurOrders) bool {
+func orderInOppositeDirection(me PhysicalState, orders AssignedOrders) bool {
 	return orderInDirection(me.Floor, oppositeDirection(me.MovDirection), orders)
 }
 
-func orderInDirection(currentfloor int, direction Direction, orders OurOrders) bool {
+func orderInDirection(currentfloor int, direction Direction, orders AssignedOrders) bool {
 	hallOrders := orders.HallOrders
 	cabOrders := orders.CabOrders
 	increment := directionToIncrement(direction)
@@ -118,7 +118,7 @@ func orderInDirection(currentfloor int, direction Direction, orders OurOrders) b
 	return false
 }
 
-func shouldIStopOnNextFloor(me PhysicalState, orders OurOrders) bool {
+func shouldIStopOnNextFloor(me PhysicalState, orders AssignedOrders) bool {
 	direction := me.MovDirection
 	nextFloor := me.Floor + directionToIncrement(direction)
 
