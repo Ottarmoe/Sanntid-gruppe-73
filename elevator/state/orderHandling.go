@@ -96,6 +96,9 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 		}
 	}
 }
+
+// close orders if the elevator is in the right state to service them
+// Update your hall orders if your image of another elevator has a more recent order state
 func handleOrderDynamics(wv *ElevWorldView) {
 	myFloor := wv.MyElev().PhysicalState.Floor
 	myMovDirection := wv.MyElev().PhysicalState.MovDirection
