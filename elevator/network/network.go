@@ -12,7 +12,7 @@ import (
 // Stores a network message, which contains the newest state information.
 // The routine periodically broadcasts the stored message on the network.
 func NetworkSender(netMessageToNetworkSender <-chan NetMessage) {
-	timeToSend := time.NewTicker(time.Duration(BroadcastRate * float64(time.Second)))
+	timeToSend := time.NewTicker(BroadcastRate)
 
 	//No periodic sending before the first netmessage has been comunnicated by state
 	netMessage := <-netMessageToNetworkSender
@@ -117,14 +117,14 @@ func NetworkReceiver(netMessageToState chan<- NetMessage, netErrorToState chan<-
 // the NetworkReceiver when the timer expires, and for which elevator it expired.
 // The timer can be reset using the resetTimer channel.
 func timeoutNotifier(id int, timeout chan int, resetTimer chan struct{}) {
-	timer := time.NewTimer(time.Duration(NetErrorTimerLength * float64(time.Second)))
+	timer := time.NewTimer(time.Duration(NetErrorTimerLength))
 	for {
 		select {
 		case <-timer.C:
 			timeout <- id
 		case <-resetTimer:
 			timer.Stop()
-			timer.Reset(time.Duration(NetErrorTimerLength * float64(time.Second)))
+			timer.Reset(time.Duration(NetErrorTimerLength))
 		}
 	}
 }

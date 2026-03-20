@@ -9,6 +9,7 @@ kan noen constants, ev. structs flyttes til akutell modul?
 --id
 --server
 endre netError tid
+skrive state eller statekeeper overalt (også i comments), physical vs physics osv. 
 
 code quality
 - use gofmt

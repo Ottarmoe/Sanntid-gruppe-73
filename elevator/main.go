@@ -11,15 +11,14 @@ import (
 	"elevator/logicalControl"
 	"elevator/state"
 	. "elevator/stateTypes"
-	"fmt"
 	"time"
 )
 
 func main() {
-	ConstantsInit()
+	ConstantsInit() //always call this first to set up the constants, especially the elevatorID
 
-	serverAdress := fmt.Sprintf("localhost:%d", 15657+MyID())
-	hardwareLow.Init(serverAdress)
+	hardwareLow.Init()
+
 	networkLow.Init()
 
 	sense_buttons := make(chan ButtonEvent)

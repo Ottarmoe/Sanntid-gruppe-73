@@ -5,6 +5,7 @@ import (
 	"net"
 	"sync"
 	. "elevator/stateTypes"
+	. "elevator/elevatorConstants"
 )
 
 
@@ -12,14 +13,21 @@ var _initialized    bool = false
 var _mtx            sync.Mutex
 var _conn           net.Conn
 
-func Init(addr string) {
+func Init() {
+	var serverAdress string
+	if(UsingSimulator()){
+		serverAdress = fmt.Sprintf("localhost:%d", 15657+MyID())
+	}else{
+		serverAdress = fmt.Sprintf("localhost:%d", 15657)
+	}
+
 	if _initialized {
 		fmt.Println("Driver already initialized!")
 		return
 	}
 	_mtx = sync.Mutex{}
 	var err error
-	_conn, err = net.Dial("tcp", addr)
+	_conn, err = net.Dial("tcp", serverAdress)
 	if err != nil {
 		panic(err.Error())
 	}
