@@ -35,7 +35,7 @@ func StateKeeper(
 	poke <-chan struct{},
 ) {
 	var wv ElevWorldView = initWorldView(initfloor)
-	me := wv.MyState()
+	me := wv.MyElev()
 
 	stateToController <- me.PhysicalState
 
@@ -119,7 +119,7 @@ func initWorldView(initfloor int) ElevWorldView {
 		}
 	}
 
-	me := wv.MyState()
+	me := wv.MyElev()
 	me.PhysicalState.MechError = false
 	me.PhysicalState.Behaviour = Idle
 	me.PhysicalState.Floor = initfloor

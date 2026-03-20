@@ -7,16 +7,16 @@ import (
 )
 
 func handleButton(wv *ElevWorldView, event ButtonEvent) {
-	me := wv.MyState()
+	me := wv.MyElev()
 	floor := event.Floor
 
 	switch event.Button {
 	case BT_HallUp:
-		if !wv.AnyoneInHallOPR(floor, Up) {
+		if !wv.AnyoneInHallOrderState(HallOPR,floor, Up) {
             me.OrderState.HallOrders[floor][Up] = HallO
         }
 	case BT_HallDown:
-		if !wv.AnyoneInHallOPR(floor, Down) {
+		if !wv.AnyoneInHallOrderState(HallOPR,floor, Down) {
             me.OrderState.HallOrders[floor][Down] = HallO
         }
 	case BT_Cab:
@@ -82,8 +82,6 @@ func findConsensus(wv ElevWorldView) OrdersWithConsensus {
 }
 
 func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
-	me := wv.MyState()
-	
 	wv.ElevStates[netMessage.ID].OrderState.HallOrders = netMessage.ElevState.OrderState.HallOrders
 
 	//atchive their cab state
@@ -94,7 +92,7 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	}
 	//check if their archive is up to date
 	for floor := 0; floor < NumFloors; floor++ {
-		if netMessage.CabBackups[ID()][floor] == me.OrderState.CabOrders[floor] {
+		if netMessage.CabBackups[ID()][floor] == wv.MyElev().OrderState.CabOrders[floor] {
 			wv.CabAgreement[netMessage.ID][floor] = true
 		} else {
 			wv.CabAgreement[netMessage.ID][floor] = false
@@ -103,9 +101,9 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	//if that elevator not yet seen, integrate their archive
 	if !wv.CabArchiveSeen[netMessage.ID] {
 		for floor := 0; floor < NumFloors; floor++ {
-			if me.OrderState.CabOrders[floor] == CabUO {
+			if wv.MyElev().OrderState.CabOrders[floor] == CabUO {
 				if netMessage.CabBackups[ID()][floor] == CabO {
-					me.OrderState.CabOrders[floor] = CabO
+					wv.MyElev().OrderState.CabOrders[floor] = CabO
 				}
 			}
 		}
@@ -123,77 +121,44 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	}
 }
 func handleOrderDynamics(wv *ElevWorldView) {
-	elevator := &wv.ElevStates[ID()]
-	physics := &elevator.PhysicalState
+	myFloor := wv.MyElev().PhysicalState.Floor
+	myMovDirection := wv.MyElev().PhysicalState.MovDirection
+	myBehaviour := wv.MyElev().PhysicalState.Behaviour
 
 	//transition to OPR when finishing order
 	//and removal of cab order
-	if physics.Behaviour == DoorOpen && !elevator.PhysicalState.MechError {
+	if myBehaviour == DoorOpen && !wv.MyElev().PhysicalState.MechError {
 		//cab order
 		//does not need to change CabAgreement
-		elevator.OrderState.CabOrders[physics.Floor] = CabNO
+		wv.MyElev().OrderState.CabOrders[myFloor] = CabNO
 		//hall order
 		//is everyone in Order or OPR?
-		readyToTransition := true
-		for elev := 0; elev < NumElevators; elev++ {
-			if !wv.NetError[elev] || elev == ID() {
-				readyToTransition = readyToTransition && wv.ElevStates[elev].OrderState.HallOrders[physics.Floor][physics.MovDirection] != HallNO
-			}
-		}
-		if readyToTransition {
-			elevator.OrderState.HallOrders[physics.Floor][physics.MovDirection] = HallOPR
-		}
+		if !wv.AnyoneInHallOrderState(HallNO,myFloor, Up) {
+            wv.MyElev().OrderState.HallOrders[myFloor][myMovDirection] = HallOPR
+        }
 	}
 	//order diffusion
 	for floor := 0; floor < NumFloors; floor++ {
 		for _, dir := range []Direction{Up, Down} {
-			//construct array of other elevators
-			elevatorStates := []HallOrderState{}
-			for elev := 0; elev < NumElevators; elev++ {
-				if !wv.NetError[elev] || elev == ID() {
-					elevatorStates = append(elevatorStates, wv.ElevStates[elev].OrderState.HallOrders[floor][dir])
-				}
-			}
-			elevator.OrderState.HallOrders[floor][dir] = SingleOrderDiffusion(elevator.OrderState.HallOrders[floor][dir], elevatorStates)
+			 orderDiffusion(wv,floor,dir)
 		}
 	}
 }
 
-func SingleOrderDiffusion(me HallOrderState, orderStates []HallOrderState) HallOrderState {
-	switch me {
+func orderDiffusion(wv *ElevWorldView,floor int,dir Direction) {
+	switch wv.MyElev().OrderState.HallOrders[floor][dir] {
 	case HallO:
-		//transition to OPR if someone is in OPR
-		readyToTransition := false
-		for _, stat := range orderStates {
-			if stat == HallOPR {
-				readyToTransition = true
-			}
-		}
-		if readyToTransition {
-			return HallOPR
+		if wv.AnyoneInHallOrderState(HallOPR,floor, Up) {
+			wv.MyElev().OrderState.HallOrders[floor][dir] = HallOPR
 		}
 	case HallOPR:
-		//transition to HallNO if no one is in HallO anymore
-		readyToTransition := true
-		for _, stat := range orderStates {
-			if stat == HallO {
-				readyToTransition = false
-			}
-		}
-		if readyToTransition {
-			return HallNO
+		if !wv.AnyoneInHallOrderState(HallO,floor, Up) {
+			wv.MyElev().OrderState.HallOrders[floor][dir] = HallNO
 		}
 	case HallNO:
-		//transition to HallO if someone is in HallO
-		readyToTransition := false
-		for _, stat := range orderStates {
-			if stat == HallO {
-				readyToTransition = true
-			}
-		}
-		if readyToTransition {
-			return HallO
+		if wv.AnyoneInHallOrderState(HallO,floor, Up) {
+			wv.MyElev().OrderState.HallOrders[floor][dir] = HallO
 		}
 	}
-	return me
 }
+	

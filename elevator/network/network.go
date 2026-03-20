@@ -11,7 +11,7 @@ import (
 
 //Stores a network message, which contains the newest state information. 
 //The routine periodically broadcasts the stored message on the network. 
-func NetworkSender(netMessageToNetworkSender <-chan NetMessage, pokeState chan<- struct{}) {
+func NetworkSender(netMessageToNetworkSender <-chan NetMessage) {
 	timeToSend := time.NewTicker(time.Duration(BroadcastRate * float64(time.Second)))
 
 	//No periodic sending before the first netmessage has been comunnicated by state
@@ -23,7 +23,6 @@ func NetworkSender(netMessageToNetworkSender <-chan NetMessage, pokeState chan<-
 			//Store newest netMessage
 
 		case <-timeToSend.C:
-			pokeState <- struct{}{}
 			data, err := json.Marshal(netMessage)
 			if err != nil {
 				log.Println("Send json marshal error:", err)

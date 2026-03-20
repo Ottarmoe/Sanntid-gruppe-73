@@ -5,22 +5,16 @@ import (
 )
 
 func handleFloor(wv *ElevWorldView, event int) {
-	me := wv.MyState()
-
-	me.PhysicalState.Floor = event
+	wv.MyElev().PhysicalState.Floor = event
 }
 
 func handleMotor(wv *ElevWorldView, event PhysicalState) {
-	me := wv.MyState()
-
-	me.PhysicalState.Behaviour = event.Behaviour
-	me.PhysicalState.MovDirection = event.MovDirection
+	wv.MyElev().PhysicalState.Behaviour = event.Behaviour
+	wv.MyElev().PhysicalState.MovDirection = event.MovDirection
 }
 
 func handleMech(wv *ElevWorldView, event bool) {
-	me := wv.MyState()
-
-	me.PhysicalState.MechError = event
+	wv.MyElev().PhysicalState.MechError = event
 }
 
 func handleNetworkPhysics(wv *ElevWorldView, netMessage NetMessage) {

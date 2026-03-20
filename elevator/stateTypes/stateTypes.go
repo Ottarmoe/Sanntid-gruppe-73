@@ -115,14 +115,14 @@ func (wv *ElevWorldView) GetHallOrder(elev int, floor int, dir Direction) HallOr
     return wv.ElevStates[elev].OrderState.HallOrders[floor][dir]
 }
 
-func (wv *ElevWorldView) MyState() *ElevState {
+func (wv *ElevWorldView) MyElev() *ElevState {
     return &wv.ElevStates[ID()]
 }
 
-func (wv *ElevWorldView) AnyoneInHallOPR(floor int, dir Direction) bool {
+func (wv *ElevWorldView) AnyoneInHallOrderState(hallOrderState HallOrderState,floor int, dir Direction) bool {
     for elev := 0; elev < NumElevators; elev++ {
         if wv.IsOnline(elev) {
-            if wv.GetHallOrder(elev, floor, dir) == HallOPR {
+            if wv.GetHallOrder(elev, floor, dir) == hallOrderState {
                 return true
             }
         }
