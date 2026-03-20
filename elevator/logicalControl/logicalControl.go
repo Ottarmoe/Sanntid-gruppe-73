@@ -3,26 +3,25 @@ package logicalControl
 import (
 	. "elevator/elevatorConstants"
 	. "elevator/stateTypes"
-	"fmt"
 	"time"
 )
 
 func LogicalController(
-	reference <-chan PhysicalState,
-	stateUpdate <-chan PhysicalState,
-	obstruction <-chan bool,
-	referenceRequestOut chan<- struct{},
-	physicalStateOut chan<- PhysicalState,
-	mechError chan<- bool,
+	referenceCh <-chan PhysicalState,
+	stateUpdateCh <-chan PhysicalState,
+	obstructionCh <-chan bool,
+	referenceRequestOutCh chan<- struct{},
+	physicalStateOutCh chan<- PhysicalState,
+	mechErrorCh chan<- bool,
 ) {
-	watchDogGoIdle := make(chan struct{})
-	watchDogNewDeadline := make(chan time.Duration)
-	go controlWatchDog(watchDogNewDeadline, watchDogGoIdle, mechError)
-	doorClosedEvent := make(chan struct{})
-	openDoorDuration := make(chan time.Duration)
-	go doors(openDoorDuration, doorClosedEvent, obstruction)
+	watchDogGoIdleCh := make(chan struct{})
+	watchDogNewDeadlineCh := make(chan time.Duration)
+	go controlWatchDog(watchDogNewDeadlineCh, watchDogGoIdleCh, mechErrorCh)
+	doorClosedEventCh := make(chan struct{})
+	openDoorDurationCh := make(chan time.Duration)
+	go doors(openDoorDurationCh, doorClosedEventCh, obstructionCh)
 
-	currState := <-stateUpdate
+	currState := <-stateUpdateCh
 	refState := currState
 	initialState := currState
 	doReferenceRequest := true
@@ -38,7 +37,7 @@ func LogicalController(
 			if currState.Behaviour != refState.Behaviour {
 				switch refState.Behaviour {
 				case DoorOpen:
-					openDoorDuration <- DoorOpenDuration
+					openDoorDurationCh <- DoorOpenDuration
 					currState.Behaviour = DoorOpen
 				case Idle:
 					currState.Behaviour = Idle
@@ -59,24 +58,24 @@ func LogicalController(
 		}
 		//if anything was changed
 		if initialState != currState {
-			physicalStateOut <- currState
+			physicalStateOutCh <- currState
 		}
 		if currState == refState && doReferenceRequest {
-			referenceRequestOut <- struct{}{}
+			referenceRequestOutCh <- struct{}{}
 			if currState.Behaviour == Idle {
-				watchDogGoIdle <- struct{}{}
+				watchDogGoIdleCh <- struct{}{}
 			}
 		}
 		//wait for any change in state, or the arrival of a new reference
 		initialState = currState
 		doReferenceRequest = true
 		select {
-		case newActual := <-stateUpdate:
+		case newActual := <-stateUpdateCh:
 			newActual.MechError = false //controller always tries to move as if it is fully functional
 			currState.Floor = newActual.Floor
-		case <-doorClosedEvent:
+		case <-doorClosedEventCh:
 			currState.Behaviour = Idle
-		case refState = <-reference:
+		case refState = <-referenceCh:
 			refState.MechError = false
 			if refState != currState {
 				//time from traversing between floors
@@ -89,8 +88,7 @@ func LogicalController(
 					expectedTime += DoorObstructionBuffer //adjust this to adjust sensitivity to obstruction
 				}
 				expectedTime += DeadlineBuffer
-				watchDogNewDeadline <- expectedTime
-				fmt.Printf("R ")
+				watchDogNewDeadlineCh <- expectedTime
 			}
 			doReferenceRequest = false
 		}
@@ -98,14 +96,14 @@ func LogicalController(
 
 }
 
-func doors(holdOpenFor <-chan time.Duration, doorsClosed chan<- struct{}, obstruction <-chan bool) {
+func doors(holdOpenForCh <-chan time.Duration, doorsClosedCh chan<- struct{}, obstructionCh <-chan bool) {
 	closingTime := time.NewTimer(time.Second)
 	closingTime.Stop()
 	obstructed := false
 	timerActive := false
 	for {
 		select {
-		case obstructed = <-obstruction:
+		case obstructed = <-obstructionCh:
 			//only start a new closing timer if the previous closingTime has already passed
 			if !obstructed && !timerActive {
 				closingTime.Reset(PostObstructionOpenTime)
@@ -113,10 +111,10 @@ func doors(holdOpenFor <-chan time.Duration, doorsClosed chan<- struct{}, obstru
 			}
 		case <-closingTime.C:
 			if !obstructed {
-				doorsClosed <- struct{}{}
+				doorsClosedCh <- struct{}{}
 			}
 			timerActive = false
-		case openTime := <-holdOpenFor:
+		case openTime := <-holdOpenForCh:
 			closingTime.Stop()
 			closingTime.Reset(openTime)
 			timerActive = true
@@ -124,23 +122,23 @@ func doors(holdOpenFor <-chan time.Duration, doorsClosed chan<- struct{}, obstru
 	}
 }
 
-func controlWatchDog(deadline <-chan time.Duration, goIdle <-chan struct{}, mechErrorOut chan<- bool) {
+func controlWatchDog(deadlineCh <-chan time.Duration, goIdleCh <-chan struct{}, mechErrorOutCh chan<- bool) {
 	deadLineTimer := time.NewTimer(time.Second)
 	deadLineTimer.Stop()
 	idle := true
 
 	for {
 		select {
-		case deadline := <-deadline:
+		case deadline := <-deadlineCh:
 			deadLineTimer.Stop()
 			deadLineTimer.Reset(deadline)
-			mechErrorOut <- false
+			mechErrorOutCh <- false
 			idle = false
 		case <-deadLineTimer.C:
 			if !idle {
-				mechErrorOut <- true
+				mechErrorOutCh <- true
 			}
-		case <-goIdle:
+		case <-goIdleCh:
 			idle = true
 		}
 	}

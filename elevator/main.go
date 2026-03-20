@@ -21,44 +21,43 @@ func main() {
 
 	networkLow.Init()
 
-	sense_buttons := make(chan ButtonEvent)
-	sense_floor := make(chan int)
-	sense_obstr := make(chan bool)
-	sense_stop := make(chan bool)
-	int_mot := make(chan PhysicalState, 10)
-	int_mech := make(chan bool)
+	senseButtonsCh := make(chan ButtonEvent)
+	senseFloorCh := make(chan int)
+	senseObstructionCh := make(chan bool)
+	
+	motorStateCh := make(chan PhysicalState, 10)
+	mechErrorCh := make(chan bool)
 
-	ref_request := make(chan struct{}, 20)
-	ref_to_controller := make(chan PhysicalState)
-	stat_to_controller := make(chan PhysicalState, 10)
+	refRequestCh := make(chan struct{}, 20)
+	refToControllerCh := make(chan PhysicalState)
+	statToControllerCh := make(chan PhysicalState, 10)
 
-	netMessageToNetworkSender := make(chan NetMessage, 10)
-	netMessageToState := make(chan NetMessage)
-	netErrorToState := make(chan NetErrorNotification)
-	stillAliveCh := make(chan struct{})
+	netMessageToNetworkSenderCh := make(chan NetMessage, 10)
+	netMessageToStateCh := make(chan NetMessage)
+	netErrorToStateCh := make(chan NetErrorNotification)
+	stateLifeSignalCh := make(chan struct{})
 
-	ordersWithConsensusToHardware := make(chan OrdersWithConsensus)
-	physicsToHardware := make(chan PhysicalState)
+	ordersWithConsensusToHardwareCh := make(chan OrdersWithConsensus)
+	physicsToHardwareCh := make(chan PhysicalState)
 
 	startfloor := PhysicalInit()
 
-	go hardware.PollButtons(sense_buttons)
-	go hardware.PollFloorSensor(sense_floor)
-	go hardware.PollObstructionSwitch(sense_obstr)
-	go hardware.PollStopButton(sense_stop)
+	go hardware.PollButtons(senseButtonsCh)
+	go hardware.PollFloorSensor(senseFloorCh)
+	go hardware.PollObstructionSwitch(senseObstructionCh)
 
 	go state.StateKeeper(startfloor,
-		sense_buttons, sense_floor, int_mot, int_mech,
-		ordersWithConsensusToHardware, physicsToHardware,
-		stat_to_controller, ref_request, ref_to_controller,
-		netMessageToNetworkSender, netMessageToState, netErrorToState,
-		stillAliveCh)
-	go hardware.HardwareOut(physicsToHardware, ordersWithConsensusToHardware)
-	go logicalControl.LogicalController(ref_to_controller, stat_to_controller, sense_obstr, ref_request, int_mot, int_mech)
-	go NetworkSender(netMessageToNetworkSender)
-	go NetworkReceiver(netMessageToState, netErrorToState)
+		senseButtonsCh, senseFloorCh, motorStateCh, mechErrorCh,
+		ordersWithConsensusToHardwareCh, physicsToHardwareCh,
+		statToControllerCh, refRequestCh, refToControllerCh,
+		netMessageToNetworkSenderCh, netMessageToStateCh, netErrorToStateCh,
+		stateLifeSignalCh)
+	go hardware.HardwareOut(physicsToHardwareCh, ordersWithConsensusToHardwareCh)
+	go logicalControl.LogicalController(refToControllerCh, statToControllerCh, senseObstructionCh, refRequestCh, motorStateCh, mechErrorCh)
+	go NetworkSender(netMessageToNetworkSenderCh)
+	go NetworkReceiver(netMessageToStateCh, netErrorToStateCh)
 
-	suicideWatchDog(stillAliveCh)
+	suicideWatchDog(stateLifeSignalCh)
 }
 
 func PhysicalInit() int {

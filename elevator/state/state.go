@@ -12,23 +12,23 @@ import (
 // obstruction is not considered a state, and is handled internally by the door system
 func StateKeeper(
 	initfloor int,
-	buttonClick <-chan ButtonEvent,
-	floorReached <-chan int,
-	motor <-chan PhysicalState,
-	mechError <-chan bool,
+	buttonClickCh <-chan ButtonEvent,
+	floorReachedCh <-chan int,
+	motorStateCh <-chan PhysicalState,
+	mechErrorCh <-chan bool,
 
-	ordersWithConsensusToHardware chan<- OrdersWithConsensus,
-	physicsToHardware chan<- PhysicalState,
+	ordersWithConsensusToHardwareCh chan<- OrdersWithConsensus,
+	physicsToHardwareCh chan<- PhysicalState,
 
-	stateToController chan<- PhysicalState,
-	referenceRequest <-chan struct{},
-	refToController chan<- PhysicalState,
+	stateToControllerCh chan<- PhysicalState,
+	referenceRequestCh <-chan struct{},
+	refToControllerCh chan<- PhysicalState,
 
-	netMessageToNetworkSender chan<- NetMessage,
-	netMessageToState <-chan NetMessage,
-	netErrorToState <-chan NetErrorNotification,
+	netMessageToNetworkSenderCh chan<- NetMessage,
+	netMessageToStateCh <-chan NetMessage,
+	netErrorToStateCh <-chan NetErrorNotification,
 
-	stillAlive chan<- struct{},
+	stillAliveCh chan<- struct{},
 ) {
 	var wv ElevWorldView = initWorldView(initfloor)
 
@@ -36,7 +36,7 @@ func StateKeeper(
 	heart := time.NewTicker(HeartBeatInerval)
 
 	//initializing communication to controller
-	stateToController <- wv.MyElev().PhysicalState
+	stateToControllerCh <- wv.MyElev().PhysicalState
 
 	//last reference sent, prevents repeat references
 	var lastRef PhysicalState
@@ -51,50 +51,49 @@ func StateKeeper(
 		//the StateKeeper is also obligated to service reference requests from the logicalController when relevant
 		select {
 		case <-heart.C:
-		case buttonEvent := <-buttonClick:
+		case buttonEvent := <-buttonClickCh:
 			handleButton(&wv, buttonEvent)
 
-		case floorEvent := <-floorReached:
+		case floorEvent := <-floorReachedCh:
 			handleFloor(&wv, floorEvent)
 
-		case motorEvent := <-motor:
+		case motorEvent := <-motorStateCh:
 			handleMotor(&wv, motorEvent)
 
-		case mechErrorEvent := <-mechError:
-			//fmt.Println("mech error", mechErrorEvent)
+		case mechErrorEvent := <-mechErrorCh:
 			handleMech(&wv, mechErrorEvent)
 
-		case netMessage := <-netMessageToState:
+		case netMessage := <-netMessageToStateCh:
 			handleNetworkOrders(&wv, netMessage)
 			handleNetworkPhysics(&wv, netMessage)
 
-		case netErrorNotification := <-netErrorToState:
+		case netErrorNotification := <-netErrorToStateCh:
 			wv.NetError[netErrorNotification.ID] = netErrorNotification.NetError
 			fmt.Println("NetError:", wv.NetError)
 
-		case <-referenceRequest:
+		case <-referenceRequestCh:
 			ordersWithConsensus := findConsensus(&wv)
 			relevantOrders := hallRequestAssigner.HRA(ordersWithConsensus, compilePhysicalStates(&wv), wv.NetError)
 			ref := referenceGenerator.ReferenceGenerator(wv.MyElev().PhysicalState, relevantOrders)
 			//avoid repeat references
 			if lastRef != ref {
-				refToController <- ref
+				refToControllerCh <- ref
 			}
 			lastRef = ref
 			shouldShareNewState = false
 		}
 		handleOrderDynamics(&wv)
-		stillAlive <- struct{}{}
+		stillAliveCh <- struct{}{}
 
 		if shouldShareNewState {
 			//Update hardware and controller
 			ordersWithConsensus := findConsensus(&wv)
-			ordersWithConsensusToHardware <- ordersWithConsensus
-			physicsToHardware <- wv.MyElev().PhysicalState
-			stateToController <- wv.MyElev().PhysicalState
+			ordersWithConsensusToHardwareCh <- ordersWithConsensus
+			physicsToHardwareCh <- wv.MyElev().PhysicalState
+			stateToControllerCh <- wv.MyElev().PhysicalState
 
 			//New state info to network
-			netMessageToNetworkSender <- wv.CompileNetMessage()
+			netMessageToNetworkSenderCh <- wv.CompileNetMessage()
 		}
 	}
 }

@@ -71,7 +71,6 @@ func handleNetworkOrders(wv *ElevWorldView, netMessage NetMessage) {
 	}
 	//if that elevator not yet seen, integrate their archive
 	if !wv.CabArchiveSeen[netMessage.ID] {
-		//fmt.Println("integrating new archive")
 		for floor := 0; floor < NumFloors; floor++ {
 			if netMessage.CabBackups[MyID()][floor] == CabO {
 				wv.MyElev().OrderState.CabOrders[floor] = CabO

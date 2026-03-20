@@ -73,7 +73,7 @@ type NetErrorNotification struct {
 	NetError bool
 }
 
-// Structs that represent purely if an order exists or not. 
+// Structs that represent purely if an order exists or not
 type OrdersWithConsensus struct {
 	HallOrders [NumFloors][2]bool 
 	CabOrders  [NumElevators][NumFloors]bool

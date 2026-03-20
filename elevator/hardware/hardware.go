@@ -11,15 +11,15 @@ const pollRate = 20 * time.Millisecond
 
 // Listens for changes in physical state or button lights communicated by statekeeper,
 // and cotrols hardware to make sure that the physical world reflects the worldview.
-func HardwareOut(physicalToHardware <-chan PhysicalState, ordersWithConsensusToHardware <-chan OrdersWithConsensus) {
+func HardwareOut(physicalToHardwareCh <-chan PhysicalState, ordersWithConsensusToHardwareCh <-chan OrdersWithConsensus) {
 	var prevConsensus OrdersWithConsensus
 	resetLights()
 	for {
 		select {
-		case physicalState := <-physicalToHardware:
+		case physicalState := <-physicalToHardwareCh:
 			updateMotorAndDoor(physicalState)
 
-		case ordersWithConsensus := <-ordersWithConsensusToHardware:
+		case ordersWithConsensus := <-ordersWithConsensusToHardwareCh:
 			updateButtonLights(ordersWithConsensus, prevConsensus)
 			prevConsensus = ordersWithConsensus
 		}
@@ -27,10 +27,10 @@ func HardwareOut(physicalToHardware <-chan PhysicalState, ordersWithConsensusToH
 }
 
 // *HardwareIn*
-// Four poll routines that continuously read hardware inputs (buttons, floor sensor,
-// stop button, obstruction switch) and send events to statekeeper only
+// Three poll routines that continuously read hardware inputs (buttons, floor sensor,
+// and obstruction switch) and send events to statekeeper only
 // when a change is detected.
-func PollButtons(receiver chan<- ButtonEvent) {
+func PollButtons(receiverCh chan<- ButtonEvent) {
 	prev := make([][3]bool, NumFloors)
 	for {
 		time.Sleep(pollRate)
@@ -38,42 +38,31 @@ func PollButtons(receiver chan<- ButtonEvent) {
 			for b := ButtonType(0); b < 3; b++ {
 				v := GetButton(b, f)
 				if v != prev[f][b] && v != false {
-					receiver <- ButtonEvent{Floor: f, Button: ButtonType(b)}
+					receiverCh <- ButtonEvent{Floor: f, Button: ButtonType(b)}
 				}
 				prev[f][b] = v
 			}
 		}
 	}
 }
-func PollFloorSensor(receiver chan<- int) {
+func PollFloorSensor(receiverCh chan<- int) {
 	prev := -1
 	for {
 		time.Sleep(pollRate)
 		v := GetFloor()
 		if v != prev && v != -1 {
-			receiver <- v
+			receiverCh <- v
 		}
 		prev = v
 	}
 }
-func PollStopButton(receiver chan<- bool) {
-	prev := false
-	for {
-		time.Sleep(pollRate)
-		v := GetStop()
-		if v != prev {
-			receiver <- v
-		}
-		prev = v
-	}
-}
-func PollObstructionSwitch(receiver chan<- bool) {
+func PollObstructionSwitch(receiverCh chan<- bool) {
 	prev := false
 	for {
 		time.Sleep(pollRate)
 		v := GetObstruction()
 		if v != prev {
-			receiver <- v
+			receiverCh <- v
 		}
 		prev = v
 	}
