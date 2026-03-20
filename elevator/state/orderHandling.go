@@ -12,13 +12,13 @@ func handleButton(wv *ElevWorldView, event ButtonEvent) {
 
 	switch event.Button {
 	case BT_HallUp:
-		if !wv.AnyoneInHallOrderState(HallOPR,floor, Up) {
-            me.OrderState.HallOrders[floor][Up] = HallO
-        }
+		if !wv.AnyoneInHallOrderState(HallOPR, floor, Up) {
+			me.OrderState.HallOrders[floor][Up] = HallO
+		}
 	case BT_HallDown:
-		if !wv.AnyoneInHallOrderState(HallOPR,floor, Down) {
-            me.OrderState.HallOrders[floor][Down] = HallO
-        }
+		if !wv.AnyoneInHallOrderState(HallOPR, floor, Down) {
+			me.OrderState.HallOrders[floor][Down] = HallO
+		}
 	case BT_Cab:
 		if me.OrderState.CabOrders[floor] != CabO {
 			me.OrderState.CabOrders[floor] = CabO
@@ -132,33 +132,31 @@ func handleOrderDynamics(wv *ElevWorldView) {
 		//does not need to change CabAgreement
 		wv.MyElev().OrderState.CabOrders[myFloor] = CabNO
 		//hall order
-		//is everyone in Order or OPR?
-		if !wv.AnyoneInHallOrderState(HallNO,myFloor, Up) {
-            wv.MyElev().OrderState.HallOrders[myFloor][myMovDirection] = HallOPR
-        }
+		if !wv.AnyoneInHallOrderState(HallNO, myFloor, myMovDirection) {
+			wv.MyElev().OrderState.HallOrders[myFloor][myMovDirection] = HallOPR
+		}
 	}
 	//order diffusion
 	for floor := 0; floor < NumFloors; floor++ {
 		for _, dir := range []Direction{Up, Down} {
-			 orderDiffusion(wv,floor,dir)
+			orderDiffusion(wv, floor, dir)
 		}
 	}
 }
 
-func orderDiffusion(wv *ElevWorldView,floor int,dir Direction) {
+func orderDiffusion(wv *ElevWorldView, floor int, dir Direction) {
 	switch wv.MyElev().OrderState.HallOrders[floor][dir] {
 	case HallO:
-		if wv.AnyoneInHallOrderState(HallOPR,floor, Up) {
+		if wv.AnyoneInHallOrderState(HallOPR, floor, dir) {
 			wv.MyElev().OrderState.HallOrders[floor][dir] = HallOPR
 		}
 	case HallOPR:
-		if !wv.AnyoneInHallOrderState(HallO,floor, Up) {
+		if !wv.AnyoneInHallOrderState(HallO, floor, dir) {
 			wv.MyElev().OrderState.HallOrders[floor][dir] = HallNO
 		}
 	case HallNO:
-		if wv.AnyoneInHallOrderState(HallO,floor, Up) {
+		if wv.AnyoneInHallOrderState(HallO, floor, dir) {
 			wv.MyElev().OrderState.HallOrders[floor][dir] = HallO
 		}
 	}
 }
-	
