@@ -4,7 +4,6 @@ import (
 	. "elevator/elevatorConstants"
 	. "elevator/stateTypes"
 	"fmt"
-	"math"
 	"time"
 )
 
@@ -17,10 +16,10 @@ func LogicalController(
 	mechError chan<- bool,
 ) {
 	watchDogGoIdle := make(chan struct{})
-	watchDogNewDeadline := make(chan float64)
-	go watchdog(watchDogNewDeadline, watchDogGoIdle, mechError)
+	watchDogNewDeadline := make(chan time.Duration)
+	go controlWatchDog(watchDogNewDeadline, watchDogGoIdle, mechError)
 	doorClosedEvent := make(chan struct{})
-	openDoorDuration := make(chan float64)
+	openDoorDuration := make(chan time.Duration)
 	go doors(openDoorDuration, doorClosedEvent, obstruction)
 
 	currentPhysicalState := <-stateUpdate
@@ -43,7 +42,7 @@ func LogicalController(
 				}
 			}
 			//if we are not yet on the right floor
-		}else{
+		} else {
 			if referenceState.Floor < currentPhysicalState.Floor {
 				currentPhysicalState.MovDirection = Down
 			}
@@ -78,8 +77,12 @@ func LogicalController(
 		case referenceState = <-reference:
 			referenceState.MechError = false
 			if referenceState != currentPhysicalState {
-				expectedTime := 0.
-				expectedTime += math.Abs(float64(referenceState.Floor-currentPhysicalState.Floor)) * SecondsPerFloor
+				//time from traversing between floors
+				expectedTime := time.Duration(referenceState.Floor-currentPhysicalState.Floor) * SecondsPerFloor
+				if expectedTime < 0 {
+					expectedTime = -expectedTime
+				}
+				//time from door open
 				if currentPhysicalState.Behaviour == DoorOpen {
 					expectedTime += DoorObstructionBuffer //adjust this to adjust sensitivity to obstruction
 				}
@@ -94,58 +97,47 @@ func LogicalController(
 
 }
 
-func burnoutTimer(span float64, burnout chan<- struct{}) {
-	time.Sleep(time.Second * time.Duration(span))
-	burnout <- struct{}{}
-}
-
-func doors(holdOpenFor <-chan float64, doorsClosed chan<- struct{}, obstruction <-chan bool) {
-	numTimers := 0
-	obs := false
-	burnoutReturn := make(chan struct{})
-
+func doors(holdOpenFor <-chan time.Duration, doorsClosed chan<- struct{}, obstruction <-chan bool) {
+	closingTime := time.NewTimer(time.Second)
+	closingTime.Stop()
+	obstructed := false
+	timerActive := false
 	for {
 		select {
-		case deadline := <-holdOpenFor:
-			go burnoutTimer(deadline, burnoutReturn)
-			numTimers++
-		case obs = <-obstruction:
-			if !obs {
-				numTimers++
-				go burnoutTimer(DoorOpenDuration, burnoutReturn)
+		case obstructed = <-obstruction:
+			//only start a new closing timer if the previous closingTime has already passed
+			if !obstructed && !timerActive {
+				closingTime.Reset(PostObstructionOpenTime)
+				timerActive = true
 			}
-		case <-burnoutReturn:
-			numTimers--
-			if numTimers == 0 && !obs {
-				doorsClosed <- struct{}{}
-			}
+		case <-closingTime.C:
+			doorsClosed <- struct{}{}
+			timerActive = false
+		case openTime := <-holdOpenFor:
+			closingTime.Stop()
+			closingTime.Reset(openTime)
+			timerActive = true
 		}
 	}
 }
 
-func watchdog(deadline <-chan float64, goIdle <-chan struct{}, mechErrorSignal chan<- bool) {
-	numTimers := 0
-	burnoutReturn := make(chan struct{})
+func controlWatchDog(deadline <-chan time.Duration, goIdle <-chan struct{}, mechErrorOut chan<- bool) {
+	deadLineTimer := time.NewTimer(time.Second)
+	deadLineTimer.Stop()
 	idle := true
 
 	for {
 		select {
 		case deadline := <-deadline:
-			go burnoutTimer(deadline, burnoutReturn)
-			if numTimers == 0 {
-				mechErrorSignal <- false
-			}
-			numTimers++
+			deadLineTimer.Stop()
+			deadLineTimer.Reset(deadline)
+			mechErrorOut <- false
 			idle = false
-			//fmt.Println("no longer idle")
-		case <-burnoutReturn:
-			numTimers--
-			if numTimers == 0 && !idle {
-				mechErrorSignal <- true
+		case <-deadLineTimer.C:
+			if !idle {
+				mechErrorOut <- true
 			}
-
 		case <-goIdle:
-			//fmt.Println("gone idle")
 			idle = true
 		}
 	}
