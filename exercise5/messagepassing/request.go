@@ -46,16 +46,21 @@ type ResourceRequest struct {
 func resourceManager(askFor chan ResourceRequest, giveBack chan Resource){
 
     res     := Resource{}
-    //busy    := false
-    //queue   := PriorityQueue{}
+    busy    := false
+    queue   := PriorityQueue{}
 
     for {
         select {
         case request := <-askFor:
-            //fmt.Printf("[resource manager]: received request: %+v\n", request)
-            request.channel <- res
+            queue.Insert(request.channel,request.priority)
         case res = <-giveBack:
-            //fmt.Printf("[resource manager]: resource returned\n")
+            queue.PopFront()
+            busy = false
+        }
+        if(!queue.Empty() && !busy){
+            firstChannel := queue.Front().(chan Resource)
+            busy = true
+            firstChannel <- res
         }
     }
 }
